@@ -42,6 +42,27 @@ test('exam submit grades, stores results, blocks resubmit', async () => {
   } finally { server.close(); }
 });
 
+test('submit grades over the exam question set: duplicate/foreign ids cannot inflate score', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    const ex = await api('POST', '/api/exams', { subject: 'Mathematics', year: 2025, component: 2 });
+    const qs = ex.data.questions;
+    // Repeat every question 3x and append a foreign id from another subject.
+    const foreign = (await api('GET', '/api/questions?subject=Physics')).data.questions[0];
+    const answers = [];
+    for (const q of qs) {
+      for (let i = 0; i < 3; i += 1) answers.push({ question_id: q.id, answer_text: 'dup' });
+    }
+    answers.push({ question_id: foreign.id, answer_text: 'foreign' });
+    const sub = await api('POST', `/api/exams/${ex.data.exam.id}/submit`, { answers, duration_sec: 600 });
+    assert.strictEqual(sub.status, 200);
+    assert.strictEqual(sub.data.exam.score, 48); // not inflated past the true total
+    assert.ok(sub.data.exam.pct <= 100);
+    assert.strictEqual(sub.data.results.length, 12); // one row per exam question, no dupes
+  } finally { server.close(); }
+});
+
 test('stats reflect attempts; continue points to unsubmitted exam', async () => {
   const { server, api } = await startServer();
   try {

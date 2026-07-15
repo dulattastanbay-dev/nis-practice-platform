@@ -6,6 +6,21 @@ const router = express.Router();
 const SUBJECTS = ['Chemistry', 'Mathematics', 'Physics', 'Biology'];
 const PUB = 'id, subject, year, component, number, marks, topic, text_latex, figure_svg';
 
+// The set of questions that make up an exam, derived the same way POST /exams
+// builds it: exact subject+year+component paper, else the subject's first 12.
+// Grading iterates over THIS set (not the client's answer list) so a repeated
+// or foreign question_id can never inflate the score past exam.total.
+function examGradingSet(exam) {
+  let rows = db.prepare(
+    'SELECT id, marks, expected_mark FROM questions WHERE subject=? AND year=? AND component=? ORDER BY number'
+  ).all(exam.subject, exam.year, exam.component);
+  if (rows.length === 0) {
+    rows = db.prepare('SELECT id, marks, expected_mark FROM questions WHERE subject=? ORDER BY number LIMIT 12')
+      .all(exam.subject);
+  }
+  return rows;
+}
+
 function examResults(examId, uid) {
   const exam = db.prepare('SELECT * FROM exams WHERE id=? AND user_id=?').get(examId, uid);
   if (!exam) return null;
@@ -58,14 +73,14 @@ router.post('/exams/:id/submit', requireAuth, (req, res) => {
   if (!Array.isArray(answers) || answers.length === 0) {
     return res.status(400).json({ error: 'no_answers' });
   }
-  const getQ = db.prepare('SELECT id, expected_mark FROM questions WHERE id=?');
-  const graded = [];
-  for (const a of answers) {
-    const q = getQ.get(a.question_id);
-    if (!q) return res.status(400).json({ error: 'bad_question' });
-    const text = String(a.answer_text || '');
-    graded.push({ qid: q.id, text, awarded: text.trim() ? q.expected_mark : 0 });
-  }
+  // Map the client's answers by question id (last write wins on duplicates).
+  const answerFor = new Map();
+  for (const a of answers) answerFor.set(Number(a.question_id), String(a.answer_text || ''));
+  // Grade over the exam's own question set: exactly one attempt per question.
+  const graded = examGradingSet(exam).map((q) => {
+    const text = answerFor.get(q.id) || '';
+    return { qid: q.id, text, awarded: text.trim() ? q.expected_mark : 0 };
+  });
   const durationSec = Math.max(0, Number(req.body.duration_sec) || 0);
   const per = Math.round(durationSec / graded.length);
   const ins = db.prepare(`
