@@ -351,6 +351,73 @@ a.row-item:hover, .row-item.hoverable:hover { background:var(--green-tint); }
 table.results { display:block; overflow-x:auto; }
 @media (min-width:561px){ table.results { display:table; } }
 
+/* ===========================================================
+   Delight — hover / cursor micro-interactions & polish
+   =========================================================== */
+
+/* Keyboard focus rings (accessibility + looks intentional) */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .choice:focus-visible {
+  outline:2.5px solid var(--green); outline-offset:2px; border-radius:8px;
+}
+
+/* Content cards: gentle lift + soft green-tinted glow on hover */
+.card { will-change:transform; }
+.card:hover { transform:translateY(-3px); box-shadow:0 18px 40px rgba(28,70,36,.13), 0 6px 14px rgba(28,70,36,.07); border-color:#d6e7d7; }
+
+/* Stat tiles: lift more + icon pops and tilts */
+.stat-icon { transition:transform .3s var(--ease), box-shadow .3s var(--ease); }
+.stat-card:hover { transform:translateY(-6px); box-shadow:0 22px 44px rgba(46,107,49,.16); border-color:#cfe6d1; }
+.stat-card:hover .stat-icon { transform:scale(1.12) rotate(-6deg); }
+.stat-card:hover::after { transform:scale(1.25); transition:transform .4s var(--ease); }
+
+/* About feature cards */
+.about-ic { transition:transform .3s var(--ease); }
+.about-card:hover { transform:translateY(-6px); box-shadow:var(--sh-3); border-color:#cfe6d1; }
+.about-card:hover .about-ic { transform:translateY(-4px) scale(1.1) rotate(4deg); }
+
+/* Shine sweep across gradient buttons on hover */
+.btn-primary, .btn-blue { position:relative; overflow:hidden; }
+.btn-primary::after, .btn-blue::after {
+  content:""; position:absolute; top:0; left:-140%; width:65%; height:100%; pointer-events:none;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+  transform:skewX(-22deg); transition:left .65s var(--ease);
+}
+.btn-primary:hover::after, .btn-blue:hover::after { left:150%; }
+
+/* List rows: slide + icon pop; clickable rows get a nudge */
+.row-ic { transition:transform .25s var(--ease); }
+.row-item { cursor:default; }
+.row-item:hover .row-ic { transform:scale(1.12) rotate(-5deg); }
+a.row-item { cursor:pointer; }
+a.row-item:hover { transform:translateX(5px); }
+
+/* Quick-action rows reveal a → on hover */
+a.row-item .row-main::after { content:"→"; opacity:0; margin-left:8px; transition:opacity .2s var(--ease), transform .2s var(--ease); transform:translateX(-4px); display:inline-block; color:var(--green); font-weight:800; }
+a.row-item:hover .row-main::after { opacity:1; transform:translateX(0); }
+
+/* Nav items: soft nudge; logo waves when hovered */
+.logo { cursor:default; }
+.logo:hover svg { animation:wiggle .6s var(--ease); }
+.avatar { transition:transform .25s var(--ease); }
+.side-profile:hover .avatar, .user-chip:hover .avatar { transform:scale(1.08) rotate(-4deg); }
+
+/* Lang pills + chips lift a touch */
+.lang-switch button:hover { transform:translateY(-1px); }
+.user-chip { transition:box-shadow .2s var(--ease), transform .2s var(--ease); }
+.user-chip:hover { transform:translateY(-1px); box-shadow:var(--sh-2); }
+
+/* Star / marked rows sparkle */
+.star-btn:hover { transform:translateY(-1px); }
+.badge { transition:transform .2s var(--ease); }
+.row-item:hover .badge { transform:scale(1.05); }
+
+@keyframes wiggle { 0%,100%{ transform:rotate(0); } 20%{ transform:rotate(-9deg); } 55%{ transform:rotate(7deg); } 80%{ transform:rotate(-3deg); } }
+@keyframes floaty { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
+@keyframes pulseGlow { 0%,100%{ box-shadow:0 8px 20px rgba(230,168,23,.30); } 50%{ box-shadow:0 10px 28px rgba(230,168,23,.55); } }
+
+/* Trophy on the results banner gently floats */
+.score-banner .big { display:inline-block; }
+
 /* ---------- Motion ---------- */
 @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
 @keyframes popIn { from { opacity:0; transform:scale(.96) translateY(10px); } to { opacity:1; transform:none; } }
@@ -358,8 +425,10 @@ table.results { display:block; overflow-x:auto; }
 @keyframes shimmer { 0% { left:-40%; } 60%,100% { left:120%; } }
 @keyframes spin { to { transform:rotate(360deg); } }
 
-/* Staggered entrance for the direct children of the routed view */
-#view > * { animation:fadeUp .5s var(--ease) both; }
+/* Staggered entrance for the direct children of the routed view.
+   fill-mode 'backwards' (not 'both') so the finished animation does NOT
+   forward-lock transform:none — that would block the :hover lifts below. */
+#view > * { animation:fadeUp .5s var(--ease) backwards; }
 #view > *:nth-child(1){ animation-delay:.02s; }
 #view > *:nth-child(2){ animation-delay:.08s; }
 #view > *:nth-child(3){ animation-delay:.14s; }
@@ -367,7 +436,7 @@ table.results { display:block; overflow-x:auto; }
 #view > *:nth-child(5){ animation-delay:.26s; }
 #view > *:nth-child(6){ animation-delay:.32s; }
 /* Stagger tiles inside a stat grid */
-.grid-4 > * { animation:fadeUp .5s var(--ease) both; }
+.grid-4 > * { animation:fadeUp .5s var(--ease) backwards; }
 .grid-4 > *:nth-child(2){ animation-delay:.06s; } .grid-4 > *:nth-child(3){ animation-delay:.12s; } .grid-4 > *:nth-child(4){ animation-delay:.18s; }
 
 @media (prefers-reduced-motion: reduce){
