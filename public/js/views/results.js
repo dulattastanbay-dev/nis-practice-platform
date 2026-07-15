@@ -62,4 +62,5 @@ Views.results = async function (root, params) {
     renderMath(root);
   }
   draw();
+  burstConfetti();
 };

@@ -53,6 +53,19 @@ function bindLangSwitch(scope) {
   });
 }
 
+function themeToggleHTML() {
+  return `<button class="theme-btn" id="btn-theme" aria-label="${t('nav.theme')}">${icon(App.theme === 'dark' ? 'sun' : 'moon')}</button>`;
+}
+
+function bindThemeToggle(scope) {
+  const btn = scope.querySelector('#btn-theme');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    applyTheme(App.theme === 'dark' ? 'light' : 'dark');
+    btn.innerHTML = icon(App.theme === 'dark' ? 'sun' : 'moon');
+  });
+}
+
 async function setLang(lang) {
   App.lang = lang;
   localStorage.setItem('nis_lang', lang);
@@ -99,6 +112,7 @@ function renderShell(active) {
       <header class="topbar">
         <button class="menu-btn" id="btn-menu" aria-label="${t('nav.menu')}">${MENU_SVG}</button>
         <div class="topbar-right">
+          ${themeToggleHTML()}
           ${langSwitchHTML()}
           <div class="user-chip">${avatarHTML(App.user.name)}<span class="uc-name">${esc(App.user.name)}</span></div>
         </div>
@@ -107,6 +121,7 @@ function renderShell(active) {
     </div>
   </div>`;
   bindLangSwitch(el);
+  bindThemeToggle(el);
   el.querySelector('#btn-logout').addEventListener('click', logout);
 
   const sidebar = el.querySelector('#sidebar');
@@ -130,11 +145,15 @@ function renderAuth() {
   const el = document.getElementById('app');
   el.innerHTML = `
   <div class="auth-wrap">
+    <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
     <div class="card auth-card">
-      <div class="logo">${LOGO_SVG}<div>
-        <div class="logo-name">NIS</div>
-        <div class="logo-sub">${t('app.school')}</div>
-      </div></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="logo">${LOGO_SVG}<div>
+          <div class="logo-name">NIS</div>
+          <div class="logo-sub">${t('app.school')}</div>
+        </div></div>
+        ${themeToggleHTML()}
+      </div>
       ${langSwitchHTML()}
       <h1>${t('auth.welcome')}</h1>
       <p class="page-sub">${t('auth.subtitle')}</p>
@@ -160,6 +179,7 @@ function renderAuth() {
     </div>
   </div>`;
   bindLangSwitch(el);
+  bindThemeToggle(el);
 
   let mode = 'login';
   const toggle = el.querySelector('#auth-toggle');
@@ -209,7 +229,7 @@ async function renderRoute() {
   renderShell(name);
   const target = document.getElementById('view');
   const view = Views[name] || (name === 'progress' ? Views.objectives : null) || Views.dashboard || viewMissing;
-  target.innerHTML = `<div class="loading">${t('common.loading')}</div>`;
+  target.innerHTML = skeletonHTML();
   try {
     await view(target, q);
     renderMath(target);
@@ -222,6 +242,7 @@ async function renderRoute() {
 }
 
 async function boot() {
+  applyTheme(App.theme);
   try {
     const r = await api('GET', '/api/me');
     App.user = r.user;

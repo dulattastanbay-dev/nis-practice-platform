@@ -2,10 +2,52 @@
 const App = {
   user: null,
   lang: localStorage.getItem('nis_lang') || 'en',
+  theme: localStorage.getItem('nis_theme')
+    || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   cleanup: null, // views with timers set this; router calls it on navigation
 };
 
 const Views = {};
+
+// ---- Theme ----
+function applyTheme(theme) {
+  App.theme = theme;
+  localStorage.setItem('nis_theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+// ---- Skeleton loading placeholder ----
+function skeletonHTML() {
+  return `<div class="skeleton-wrap">
+    <div class="sk sk-title"></div>
+    <div class="sk-grid">
+      <div class="sk sk-card"></div><div class="sk sk-card"></div>
+      <div class="sk sk-card"></div><div class="sk sk-card"></div>
+    </div>
+    <div class="sk sk-wide"></div>
+  </div>`;
+}
+
+// ---- Confetti burst (celebration). Respects reduced motion. ----
+function burstConfetti() {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors = ['#4caf50', '#e6a817', '#4a90d9', '#7c6cf0', '#2e7d32', '#ff9a3c'];
+  const layer = document.createElement('div');
+  layer.className = 'confetti-layer';
+  document.body.appendChild(layer);
+  for (let i = 0; i < 70; i += 1) {
+    const c = document.createElement('i');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDuration = (2.4 + Math.random() * 1.8) + 's';
+    c.style.animationDelay = (Math.random() * 0.5) + 's';
+    c.style.transform = `translateY(-20px) rotate(${Math.random() * 360}deg)`;
+    if (i % 3 === 0) c.style.borderRadius = '50%';
+    layer.appendChild(c);
+  }
+  setTimeout(() => layer.remove(), 5200);
+}
 
 function esc(s) {
   return String(s == null ? '' : s)
