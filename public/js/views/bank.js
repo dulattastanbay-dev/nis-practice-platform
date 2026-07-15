@@ -52,7 +52,7 @@ Views.bank = async function (root, params) {
     return `<div class="card">
       <div class="q-header">
         <div class="q-title">${t('exam.qTitle', { n: qq.number, m: qq.marks })}</div>
-        <button class="star-btn ${isM ? 'on' : ''}" id="p-star">★ ${isM ? t('bank.saved') : t('bank.save')}</button>
+        <button class="star-btn ${isM ? 'on' : ''}" id="p-star">${icon(isM ? 'star' : 'starOutline')} ${isM ? t('bank.saved') : t('bank.save')}</button>
       </div>
       <div class="q-text">${qq.text_latex}</div>
       ${qq.figure_svg || ''}
@@ -73,7 +73,7 @@ Views.bank = async function (root, params) {
 
   function fbPanelHTML() {
     return `<div class="card">
-      <div class="fb-title">${t('bank.ai')}</div>
+      <div class="fb-title">${icon('sparkles')}${t('bank.ai')}</div>
       <div class="fb-text muted" id="fb-text">—</div>
       <div class="ring-wrap">
         <div class="ring-label">${t('bank.expected')}</div>
@@ -128,7 +128,7 @@ Views.bank = async function (root, params) {
         if (on) marked.delete(qq.id); else marked.add(qq.id);
         const btn = root.querySelector('#p-star');
         btn.classList.toggle('on', !on);
-        btn.innerHTML = `★ ${!on ? t('bank.saved') : t('bank.save')}`;
+        btn.innerHTML = `${icon(!on ? 'star' : 'starOutline')} ${!on ? t('bank.saved') : t('bank.save')}`;
       } catch { /* non-fatal */ }
     });
 

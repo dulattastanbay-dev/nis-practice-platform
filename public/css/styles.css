@@ -261,7 +261,7 @@ table.results tr:hover td { background:var(--green-tint); }
 .toolbar button:hover { background:var(--green-tint); transform:translateY(-1px); }
 .toolbar + textarea.answer { border-radius:0 0 12px 12px; }
 .fb-title { font-weight:800; margin-bottom:12px; font-family:'Sora',sans-serif; display:flex; align-items:center; gap:8px; }
-.fb-title::before { content:"✨"; }
+.fb-title svg.ic { width:18px; height:18px; color:var(--green); flex:none; }
 .fb-text { font-size:14px; line-height:1.65; }
 .ring-wrap { display:flex; flex-direction:column; align-items:center; margin:18px 0 8px; }
 .ring-label { font-size:12.5px; color:var(--muted); margin-bottom:8px; font-weight:600; }
@@ -305,6 +305,24 @@ a.row-item:hover, .row-item.hoverable:hover { background:var(--green-tint); }
 .katex { font-size:1.05em; }
 .katex-display { overflow-x:auto; overflow-y:hidden; padding-bottom:4px; max-width:100%; }
 .q-text { overflow-wrap:anywhere; }
+
+/* ---------- Icon system ---------- */
+.ic { width:1em; height:1em; display:inline-block; vertical-align:-.15em; flex:none; }
+.stat-icon svg.ic { width:26px; height:26px; }
+.stat-card:nth-child(1) .stat-icon { color:#c2410c; }
+.stat-card:nth-child(2) .stat-icon { color:#1e5aa8; }
+.stat-card:nth-child(3) .stat-icon { color:#5b3fb8; }
+.stat-card:nth-child(4) .stat-icon { color:#2e6b31; }
+.row-ic svg.ic { width:21px; height:21px; }
+.about-ic { color:var(--green-dark); }
+.about-ic svg.ic { width:30px; height:30px; }
+.status-ic svg.ic { width:21px; height:21px; vertical-align:-.35em; }
+.status-ic.ok { color:var(--green); }
+.status-ic.warn { color:var(--gold); }
+.status-ic.bad { color:var(--red); }
+.star-btn svg.ic { width:16px; height:16px; }
+.score-banner .trophy { display:inline-flex; vertical-align:-8px; margin-left:6px; }
+.score-banner .trophy svg.ic { width:36px; height:36px; color:#ffe08a; }
 
 /* ---------- Mobile drawer chrome ---------- */
 .topbar-right { display:flex; align-items:center; gap:14px; }

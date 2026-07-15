@@ -4,9 +4,9 @@ Views.results = async function (root, params) {
   let tab = 'overview';
 
   function statusIcon(r) {
-    if (r.awarded_mark >= r.marks) return '<span class="status-ic">✅</span>';
-    if (r.awarded_mark > 0) return '<span class="status-ic">🟡</span>';
-    return '<span class="status-ic">❌</span>';
+    if (r.awarded_mark >= r.marks) return `<span class="status-ic ok">${icon('checkCircle')}</span>`;
+    if (r.awarded_mark > 0) return `<span class="status-ic warn">${icon('alertCircle')}</span>`;
+    return `<span class="status-ic bad">${icon('xCircle')}</span>`;
   }
 
   function overviewHTML() {
@@ -44,7 +44,7 @@ Views.results = async function (root, params) {
     root.innerHTML = `
       <div class="score-banner">
         <div>${t('results.banner')}</div>
-        <div class="big">${exam.score} / ${exam.total} 🏆</div>
+        <div class="big">${exam.score} / ${exam.total}<span class="trophy">${icon('trophy')}</span></div>
         <div class="pct">${exam.pct}%</div>
       </div>
       <div class="card">

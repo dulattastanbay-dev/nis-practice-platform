@@ -9,7 +9,7 @@ Views.marked = async function (root) {
       </div>
       <div class="card">
         ${all.length ? all.map((m) => `<div class="row-item">
-          <span class="row-ic gold">★</span>
+          <span class="row-ic gold">${icon('star')}</span>
           <div class="row-main">
             <div class="row-title">${t('q.number', { n: m.number })}</div>
             <div class="row-sub">${t('subj.' + m.subject)} · ${m.year} · ${t('papers.component', { n: m.component })} · ${t('common.marks', { m: m.marks })}</div>

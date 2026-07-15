@@ -18,7 +18,7 @@ Views.mistakes = async function (root) {
       </div>
       <div class="card">
         ${rows.length ? rows.map((m) => `<div class="row-item">
-          <span class="row-ic red">✕</span>
+          <span class="row-ic red">${icon('x')}</span>
           <div class="row-main">
             <div class="row-title">${t('q.number', { n: m.number })}
               <span class="badge red" style="margin-left:8px">${t('mist.wrong')}</span></div>

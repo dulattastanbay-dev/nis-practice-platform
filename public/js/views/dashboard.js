@@ -24,7 +24,7 @@ function continueCardHTML(cont) {
 }
 
 function recentRowHTML(r) {
-  return `<div class="row-item"><span class="row-ic green">✓</span>
+  return `<div class="row-item"><span class="row-ic green">${icon('check')}</span>
     <div class="row-main">
       <div class="row-title">${t('subj.' + r.subject)} · ${r.year} · ${t('papers.component', { n: r.component })}</div>
       <div class="row-sub">${relDay(r.submitted_at)}</div>
@@ -36,20 +36,20 @@ Views.dashboard = async function (root) {
   const s = await api('GET', '/api/stats');
   const goalPct = Math.min(100, Math.round((100 * s.today_count) / s.goal));
   const qa = [
-    ['#/bank', '▶️', t('dash.qa.practice')],
-    ['#/papers', '📄', t('dash.qa.papers')],
-    ['#/bank', '📚', t('dash.qa.bank')],
-    ['#/mistakes', '✖️', t('dash.qa.mistakes')],
-    ['#/marked', '⭐', t('dash.qa.marked')],
+    ['#/bank', icon('play'), t('dash.qa.practice')],
+    ['#/papers', icon('fileText'), t('dash.qa.papers')],
+    ['#/bank', icon('book'), t('dash.qa.bank')],
+    ['#/mistakes', icon('xCircle'), t('dash.qa.mistakes')],
+    ['#/marked', icon('star'), t('dash.qa.marked')],
   ];
   root.innerHTML = `
-    <h1 class="page-title">${t('dash.hello', { name: esc(App.user.name) })} 👋</h1>
+    <h1 class="page-title">${t('dash.hello', { name: esc(App.user.name) })}</h1>
     <p class="page-sub">${t('dash.ready')}</p>
     <div class="grid-4">
-      ${statCard('🔥', s.streak, t('dash.streak'), s.streak)}
-      ${statCard('⏱️', fmtDuration(s.time_today_sec), t('dash.today'))}
-      ${statCard('📊', s.solved, t('dash.solved'), s.solved)}
-      ${statCard('✅', s.accuracy + '%', t('dash.accuracy'), s.accuracy, '%')}
+      ${statCard(icon('flame'), s.streak, t('dash.streak'), s.streak)}
+      ${statCard(icon('clock'), fmtDuration(s.time_today_sec), t('dash.today'))}
+      ${statCard(icon('checkCircle'), s.solved, t('dash.solved'), s.solved)}
+      ${statCard(icon('target'), s.accuracy + '%', t('dash.accuracy'), s.accuracy, '%')}
     </div>
     <div class="grid-2">
       <div class="card">

@@ -70,7 +70,7 @@ Views.exam = async function (root, params) {
     qCard.innerHTML = `
       <div class="q-header">
         <div class="q-title">${t('exam.qTitle', { n: qq.number, m: qq.marks })}</div>
-        <button class="star-btn ${isMarked ? 'on' : ''}" id="star">★ ${isMarked ? t('exam.saved') : t('exam.save')}</button>
+        <button class="star-btn ${isMarked ? 'on' : ''}" id="star">${icon(isMarked ? 'star' : 'starOutline')} ${isMarked ? t('exam.saved') : t('exam.save')}</button>
       </div>
       <div class="q-text">${qq.text_latex}</div>
       ${qq.figure_svg || ''}

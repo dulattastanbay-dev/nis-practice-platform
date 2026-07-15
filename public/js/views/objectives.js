@@ -1,6 +1,6 @@
 Views.objectives = async function (root) {
   const SUBJECTS = ['Chemistry', 'Mathematics', 'Physics', 'Biology'];
-  const OBJ_ICONS = ['🧬', '⚗️', '🔬', '🧲', '⚛️', '📐', '📊', '🧪', '📘'];
+  const OBJ_ICONS = [icon('bookOpen')];
   let subject = 'Chemistry';
 
   async function draw() {
