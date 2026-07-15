@@ -16,9 +16,9 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use('/api', require('./routes/auth'));
+app.use('/api', require('./routes/content'));
 
 // Routers are mounted here in later tasks:
-// app.use('/api', require('./routes/content'));
 // app.use('/api', require('./routes/exams'));
 // app.use('/api', require('./routes/stats'));
 
