@@ -74,9 +74,10 @@ function avatarHTML(name) {
 
 function renderShell(active) {
   const el = document.getElementById('app');
+  const MENU_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
   el.innerHTML = `
   <div class="app-layout">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <div class="logo">${LOGO_SVG}<div>
         <div class="logo-name">NIS</div>
         <div class="logo-sub">${t('app.school')}</div>
@@ -93,16 +94,29 @@ function renderShell(active) {
       ).join('')}
       <button class="nav-item logout" id="btn-logout">${NAV_ICONS.logout}${t('nav.logout')}</button>
     </aside>
+    <div class="backdrop" id="sb-backdrop"></div>
     <div class="main">
       <header class="topbar">
-        ${langSwitchHTML()}
-        <div class="user-chip">${avatarHTML(App.user.name)}${esc(App.user.name)}</div>
+        <button class="menu-btn" id="btn-menu" aria-label="${t('nav.menu')}">${MENU_SVG}</button>
+        <div class="topbar-right">
+          ${langSwitchHTML()}
+          <div class="user-chip">${avatarHTML(App.user.name)}<span class="uc-name">${esc(App.user.name)}</span></div>
+        </div>
       </header>
       <main id="view"></main>
     </div>
   </div>`;
   bindLangSwitch(el);
   el.querySelector('#btn-logout').addEventListener('click', logout);
+
+  const sidebar = el.querySelector('#sidebar');
+  const backdrop = el.querySelector('#sb-backdrop');
+  const closeNav = () => { sidebar.classList.remove('open'); backdrop.classList.remove('show'); };
+  const openNav = () => { sidebar.classList.add('open'); backdrop.classList.add('show'); };
+  el.querySelector('#btn-menu').addEventListener('click', openNav);
+  backdrop.addEventListener('click', closeNav);
+  // Tapping any nav link closes the mobile drawer.
+  sidebar.querySelectorAll('a.nav-item').forEach((a) => a.addEventListener('click', closeNav));
 }
 
 async function logout() {
