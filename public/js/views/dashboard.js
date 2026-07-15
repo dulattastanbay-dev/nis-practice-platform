@@ -1,6 +1,9 @@
-function statCard(icon, value, label) {
+function statCard(icon, value, label, count, suffix) {
+  const val = count === undefined
+    ? value
+    : `<span data-count="${count}" data-suffix="${suffix || ''}">0${suffix || ''}</span>`;
   return `<div class="card stat-card"><span class="stat-icon">${icon}</span><div>
-    <div class="stat-value">${value}</div><div class="stat-label">${label}</div></div></div>`;
+    <div class="stat-value">${val}</div><div class="stat-label">${label}</div></div></div>`;
 }
 
 function heatmapHTML(cells) {
@@ -43,10 +46,10 @@ Views.dashboard = async function (root) {
     <h1 class="page-title">${t('dash.hello', { name: esc(App.user.name) })} 👋</h1>
     <p class="page-sub">${t('dash.ready')}</p>
     <div class="grid-4">
-      ${statCard('🔥', s.streak, t('dash.streak'))}
+      ${statCard('🔥', s.streak, t('dash.streak'), s.streak)}
       ${statCard('⏱️', fmtDuration(s.time_today_sec), t('dash.today'))}
-      ${statCard('📊', s.solved, t('dash.solved'))}
-      ${statCard('✅', s.accuracy + '%', t('dash.accuracy'))}
+      ${statCard('📊', s.solved, t('dash.solved'), s.solved)}
+      ${statCard('✅', s.accuracy + '%', t('dash.accuracy'), s.accuracy, '%')}
     </div>
     <div class="grid-2">
       <div class="card">

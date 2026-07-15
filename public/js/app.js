@@ -62,6 +62,16 @@ async function setLang(lang) {
   renderRoute();
 }
 
+function initials(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
+function avatarHTML(name) {
+  return `<div class="avatar">${esc(initials(name))}</div>`;
+}
+
 function renderShell(active) {
   const el = document.getElementById('app');
   el.innerHTML = `
@@ -71,6 +81,13 @@ function renderShell(active) {
         <div class="logo-name">NIS</div>
         <div class="logo-sub">${t('app.school')}</div>
       </div></div>
+      <div class="side-profile">
+        ${avatarHTML(App.user.name)}
+        <div style="min-width:0">
+          <div class="sp-name">${esc(App.user.name)}</div>
+          <div class="sp-mail">${esc(App.user.email)}</div>
+        </div>
+      </div>
       ${NAV_ITEMS.map(([key, href, label]) =>
         `<a class="nav-item ${active === key || (key === 'objectives' && active === 'progress') ? 'active' : ''}" href="${href}">${NAV_ICONS[key]}${t(label)}</a>`
       ).join('')}
@@ -79,7 +96,7 @@ function renderShell(active) {
     <div class="main">
       <header class="topbar">
         ${langSwitchHTML()}
-        <div class="user-chip">${esc(App.user.name)}</div>
+        <div class="user-chip">${avatarHTML(App.user.name)}${esc(App.user.name)}</div>
       </header>
       <main id="view"></main>
     </div>
@@ -182,6 +199,7 @@ async function renderRoute() {
   try {
     await view(target, q);
     renderMath(target);
+    animateCounters(target);
   } catch (err) {
     console.error(err);
     if (!App.user) { renderAuth(); return; }

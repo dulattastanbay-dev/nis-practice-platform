@@ -40,6 +40,32 @@ function relDay(iso) {
   return t('time.daysAgo', { n: diff });
 }
 
+// Count-up animation for elements carrying data-count (and optional data-suffix).
+// Respects prefers-reduced-motion. Called by the router after each view renders.
+function animateCounters(root) {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  root.querySelectorAll('[data-count]').forEach((el) => {
+    const target = parseFloat(el.dataset.count);
+    if (!isFinite(target)) return;
+    const suffix = el.dataset.suffix || '';
+    const setFinal = () => { el.textContent = target + suffix; };
+    if (reduce || target === 0) { setFinal(); return; }
+    const dur = 900;
+    const start = performance.now();
+    let done = false;
+    function step(now) {
+      if (done) return;
+      const p = Math.min(1, (now - start) / dur);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3))) + suffix;
+      if (p < 1) requestAnimationFrame(step);
+      else { done = true; setFinal(); }
+    }
+    requestAnimationFrame(step);
+    // Safety net: guarantee the final value even if rAF is throttled/paused.
+    setTimeout(() => { if (!done) { done = true; setFinal(); } }, dur + 150);
+  });
+}
+
 function ringSVG(value, max, size) {
   const r = (size - 12) / 2;
   const c = 2 * Math.PI * r;
