@@ -7,6 +7,7 @@ Views.bank = async function (root, params) {
   let idx = 0;
   let topics = [];
   let started = Date.now();
+  let hasLoaded = fixedMode; // filter mode shows a prompt until Start/Random is pressed
   const marked = new Set((await api('GET', '/api/marked')).marked.map((m) => m.question_id));
 
   async function loadTopics() {
@@ -91,7 +92,7 @@ Views.bank = async function (root, params) {
       ${fixedMode ? '' : filterBarHTML()}
       ${qq
         ? `<div class="practice-grid"><div id="q-col">${qCardHTML(qq)}</div>${fbPanelHTML()}</div>`
-        : `<div class="card empty" style="margin-top:16px">${list.length === 0 && (params.mistakes || params.qid) ? t('mist.empty') : idx > 0 ? t('bank.done') : t('bank.empty')}</div>`}`;
+        : `<div class="card empty" style="margin-top:16px">${fixedMode ? t('mist.empty') : !hasLoaded ? t('bank.prompt') : idx > 0 ? t('bank.done') : t('bank.empty')}</div>`}`;
 
     if (!fixedMode) {
       root.querySelectorAll('.filter select').forEach((s) => {
@@ -101,10 +102,10 @@ Views.bank = async function (root, params) {
         });
       });
       root.querySelector('#f-start').addEventListener('click', async () => {
-        list = await loadByFilters(); idx = 0; started = Date.now(); draw();
+        list = await loadByFilters(); idx = 0; started = Date.now(); hasLoaded = true; draw();
       });
       root.querySelector('#f-random').addEventListener('click', async () => {
-        list = shuffle(await loadByFilters()); idx = 0; started = Date.now(); draw();
+        list = shuffle(await loadByFilters()); idx = 0; started = Date.now(); hasLoaded = true; draw();
       });
     }
     if (!qq) return;

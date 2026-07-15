@@ -34,6 +34,9 @@ heatmap are all computed from your own activity.
 - Tests: `npm test` (Node's built-in test runner).
 - No build step: the frontend in `public/` is plain HTML/CSS/JS served by the
   Express app in `server/`.
+- First load needs internet: KaTeX (math rendering) and the Inter font load
+  from CDNs. Offline, the app still works but math falls back to plain text and
+  the font falls back to a system sans-serif.
 
 ## Structure
 
