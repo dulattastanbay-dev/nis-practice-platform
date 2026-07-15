@@ -1,0 +1,96 @@
+const { test } = require('node:test');
+const assert = require('node:assert');
+const { startServer } = require('./helpers');
+
+async function login(api) {
+  await api('POST', '/api/register', { email: 'a@b.co', password: 'secret123', name: 'Aya' });
+}
+
+test('exam create returns full paper or subject fallback', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    const ex = await api('POST', '/api/exams', { subject: 'Mathematics', year: 2025, component: 2 });
+    assert.strictEqual(ex.status, 200);
+    assert.strictEqual(ex.data.questions.length, 12);
+    assert.strictEqual(ex.data.exam.total, 60);
+    assert.strictEqual(ex.data.exam.duration_min, 90);
+    assert.ok(Array.isArray(ex.data.marked_ids));
+    const fb = await api('POST', '/api/exams', { subject: 'Chemistry', year: 2023, component: 3 });
+    assert.strictEqual(fb.data.questions.length, 5); // subject pool fallback
+    assert.strictEqual((await api('POST', '/api/exams', { subject: 'Alchemy', year: 2025, component: 2 })).status, 400);
+  } finally { server.close(); }
+});
+
+test('exam submit grades, stores results, blocks resubmit', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    const ex = await api('POST', '/api/exams', { subject: 'Mathematics', year: 2025, component: 2 });
+    const answers = ex.data.questions.map((q) => ({ question_id: q.id, answer_text: 'my answer' }));
+    const sub = await api('POST', `/api/exams/${ex.data.exam.id}/submit`, { answers, duration_sec: 3600 });
+    assert.strictEqual(sub.status, 200);
+    assert.strictEqual(sub.data.exam.score, 48);
+    assert.strictEqual(sub.data.exam.pct, 80);
+    assert.strictEqual(sub.data.results.length, 12);
+    assert.strictEqual(sub.data.results[0].number, 1);
+    assert.ok(sub.data.results[0].ai_feedback.length > 0);
+    const again = await api('POST', `/api/exams/${ex.data.exam.id}/submit`, { answers, duration_sec: 1 });
+    assert.strictEqual(again.status, 409);
+    const get = await api('GET', `/api/exams/${ex.data.exam.id}`);
+    assert.strictEqual(get.data.exam.score, 48);
+  } finally { server.close(); }
+});
+
+test('stats reflect attempts; continue points to unsubmitted exam', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    let stats = (await api('GET', '/api/stats')).data;
+    assert.strictEqual(stats.solved, 0);
+    assert.strictEqual(stats.streak, 0);
+    assert.strictEqual(stats.heatmap.length, 105);
+    assert.strictEqual(stats.continue, null);
+
+    const ex = await api('POST', '/api/exams', { subject: 'Mathematics', year: 2025, component: 2 });
+    const answers = ex.data.questions.map((q) => ({ question_id: q.id, answer_text: 'ans' }));
+    await api('POST', `/api/exams/${ex.data.exam.id}/submit`, { answers, duration_sec: 600 });
+
+    stats = (await api('GET', '/api/stats')).data;
+    assert.strictEqual(stats.solved, 12);
+    assert.strictEqual(stats.accuracy, 80);
+    assert.strictEqual(stats.streak, 1);
+    assert.strictEqual(stats.today_count, 12);
+    assert.strictEqual(stats.time_today_sec, 600);
+    assert.strictEqual(stats.recent.length, 1);
+    assert.strictEqual(stats.recent[0].score, 48);
+    assert.strictEqual(stats.heatmap[104].count, 12);
+
+    await api('POST', '/api/exams', { subject: 'Physics', year: 2024, component: 1 });
+    stats = (await api('GET', '/api/stats')).data;
+    assert.deepStrictEqual(stats.continue, { subject: 'Physics', year: 2024, component: 1 });
+  } finally { server.close(); }
+});
+
+test('objectives compute per-topic percentages', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    const qs = (await api('GET', '/api/questions?subject=Mathematics&year=2025&component=2')).data.questions;
+    const q1 = qs.find((q) => q.number === 1); // Integration 3/3
+    const q4 = qs.find((q) => q.number === 4); // Integration 5/5
+    const q5 = qs.find((q) => q.number === 5); // Sequences and Series 1/3
+    for (const q of [q1, q4, q5]) {
+      await api('POST', '/api/attempts', { question_id: q.id, answer_text: 'ans', mode: 'practice' });
+    }
+    const obj = (await api('GET', '/api/objectives?subject=Mathematics')).data.objectives;
+    const integ = obj.find((o) => o.topic === 'Integration');
+    assert.strictEqual(integ.pct, 100);
+    assert.strictEqual(integ.attempts, 2);
+    const seq = obj.find((o) => o.topic === 'Sequences and Series');
+    assert.strictEqual(seq.pct, 33);
+    const vec = obj.find((o) => o.topic === 'Vectors');
+    assert.strictEqual(vec.pct, 0);
+    assert.strictEqual(vec.attempts, 0);
+  } finally { server.close(); }
+});

@@ -17,10 +17,8 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use('/api', require('./routes/auth'));
 app.use('/api', require('./routes/content'));
-
-// Routers are mounted here in later tasks:
-// app.use('/api', require('./routes/exams'));
-// app.use('/api', require('./routes/stats'));
+app.use('/api', require('./routes/exams'));
+app.use('/api', require('./routes/stats'));
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'not_found' }));
 
