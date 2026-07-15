@@ -34,8 +34,8 @@ user accounts and real progress data, but sample question content and pre-writte
 
 ## 3. Stack
 
-- **Backend:** Node.js (v24 available), Express, better-sqlite3, bcrypt,
-  express-session.
+- **Backend:** Node.js (v24 available), Express, express-session, bcryptjs
+  (pure JS, no native build), SQLite via Node's built-in `node:sqlite`.
 - **Database:** SQLite single file `data.sqlite`, created and seeded automatically
   on first start.
 - **Frontend:** plain HTML/CSS/JS single-page app, hash routing
