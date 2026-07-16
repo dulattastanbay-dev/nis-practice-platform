@@ -35,6 +35,16 @@ router.get('/stats', requireAuth, (req, res) => {
   const start = byDay[today] ? 0 : 1; // an empty today does not break the streak
   while (byDay[dayString(start + streak)]) streak += 1;
 
+  // Longest run of consecutive active days (spec keeps current + longest streak).
+  let longestStreak = 0;
+  let run = 0;
+  let prevDay = null;
+  for (const d of Object.keys(byDay).sort()) {
+    run = prevDay && Date.parse(d) - Date.parse(prevDay) === 86400000 ? run + 1 : 1;
+    if (run > longestStreak) longestStreak = run;
+    prevDay = d;
+  }
+
   const heatmap = [];
   for (let off = 104; off >= 0; off -= 1) {
     const date = dayString(off);
@@ -57,6 +67,7 @@ router.get('/stats', requireAuth, (req, res) => {
     solved,
     accuracy,
     streak,
+    longest_streak: longestStreak,
     time_today_sec: timeTodaySec,
     today_count: todayCount,
     goal: 20,
@@ -66,22 +77,26 @@ router.get('/stats', requireAuth, (req, res) => {
   });
 });
 
+// Progress per Learning Objective (a question may map to several objectives).
 router.get('/objectives', requireAuth, (req, res) => {
   const subject = req.query.subject || 'Mathematics';
   const rows = db.prepare(`
-    SELECT q.topic,
+    SELECT lo.code, lo.description,
            COUNT(a.id) AS attempts,
            COALESCE(SUM(a.awarded_mark), 0) AS awarded,
            COALESCE(SUM(CASE WHEN a.id IS NULL THEN 0 ELSE q.marks END), 0) AS possible
-    FROM questions q
+    FROM learning_objectives lo
+    LEFT JOIN question_objectives qo ON qo.objective_id = lo.id
+    LEFT JOIN questions q ON q.id = qo.question_id
     LEFT JOIN attempts a ON a.question_id = q.id AND a.user_id = ?
-    WHERE q.subject = ?
-    GROUP BY q.topic
-    ORDER BY q.topic
+    WHERE lo.subject = ?
+    GROUP BY lo.id
+    ORDER BY lo.code
   `).all(req.session.userId, subject);
   res.json({
     objectives: rows.map((r) => ({
-      topic: r.topic,
+      code: r.code,
+      description: r.description,
       attempts: r.attempts,
       pct: r.possible ? Math.round((100 * r.awarded) / r.possible) : 0,
     })),

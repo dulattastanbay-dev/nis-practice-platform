@@ -8,12 +8,13 @@ function motivationHTML() {
   </div>`;
 }
 
-function statCard(icon, value, label, count, suffix) {
+function statCard(icon, value, label, count, suffix, hint) {
   const val = count === undefined
     ? value
     : `<span data-count="${count}" data-suffix="${suffix || ''}">0${suffix || ''}</span>`;
   return `<div class="card stat-card"><span class="stat-icon">${icon}</span><div>
-    <div class="stat-value">${val}</div><div class="stat-label">${label}</div></div></div>`;
+    <div class="stat-value">${val}</div><div class="stat-label">${label}</div>
+    ${hint ? `<div class="stat-hint">${hint}</div>` : ''}</div></div>`;
 }
 
 function heatmapHTML(cells) {
@@ -56,7 +57,8 @@ Views.dashboard = async function (root) {
     <h1 class="page-title">${t('dash.hello', { name: esc(App.user.name) })}</h1>
     <p class="page-sub">${t('dash.ready')}</p>
     <div class="grid-4">
-      ${statCard(icon('flame'), s.streak, t('dash.streak'), s.streak)}
+      ${statCard(icon('flame'), s.streak, t('dash.streak'), s.streak, '',
+        s.longest_streak > 1 ? t('dash.bestStreak', { n: s.longest_streak }) : '')}
       ${statCard(icon('clock'), fmtDuration(s.time_today_sec), t('dash.today'))}
       ${statCard(icon('checkCircle'), s.today_count, t('dash.solved'), s.today_count)}
       ${statCard(icon('target'), s.accuracy + '%', t('dash.accuracy'), s.accuracy, '%')}

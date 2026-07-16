@@ -55,6 +55,18 @@ CREATE TABLE IF NOT EXISTS attempts (
   duration_sec INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS learning_objectives (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subject TEXT NOT NULL,
+  code TEXT NOT NULL,
+  description TEXT NOT NULL,
+  UNIQUE (subject, code)
+);
+CREATE TABLE IF NOT EXISTS question_objectives (
+  question_id INTEGER NOT NULL REFERENCES questions(id),
+  objective_id INTEGER NOT NULL REFERENCES learning_objectives(id),
+  PRIMARY KEY (question_id, objective_id)
+);
 CREATE TABLE IF NOT EXISTS marked (
   user_id INTEGER NOT NULL REFERENCES users(id),
   question_id INTEGER NOT NULL REFERENCES questions(id),
@@ -79,6 +91,20 @@ if (count === 0) {
   for (const s of seed.questions) {
     ins.run(s.subject, s.year, s.component, s.number, s.marks, s.topic,
       s.text, s.figure, s.scheme, s.feedback, s.expected);
+  }
+}
+
+// Seed learning objectives and link each question to every objective covering its
+// topic (a question may carry several objectives).
+if (db.prepare('SELECT COUNT(*) AS n FROM learning_objectives').get().n === 0) {
+  const insLo = db.prepare('INSERT INTO learning_objectives (subject, code, description) VALUES (?,?,?)');
+  const link = db.prepare('INSERT OR IGNORE INTO question_objectives (question_id, objective_id) VALUES (?,?)');
+  const qsBySubject = db.prepare('SELECT id, topic FROM questions WHERE subject=?');
+  for (const lo of seed.objectives) {
+    const id = Number(insLo.run(lo.subject, lo.code, lo.description).lastInsertRowid);
+    for (const q of qsBySubject.all(lo.subject)) {
+      if (lo.topics.includes(q.topic)) link.run(q.id, id);
+    }
   }
 }
 

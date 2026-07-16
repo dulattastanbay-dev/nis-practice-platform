@@ -15,7 +15,7 @@ Views.objectives = async function (root) {
         ${r.objectives.map((o, i) => `<div class="row-item">
           <span class="row-ic green">${OBJ_ICONS[i % OBJ_ICONS.length]}</span>
           <div class="row-main">
-            <div class="row-title">${esc(o.topic)}</div>
+            <div class="row-title"><span class="lo-code">LO ${esc(o.code)}</span>${esc(o.description)}</div>
             <div class="row-sub">${t('obj.attempted', { n: o.attempts })}</div>
           </div>
           <div class="obj-bar">

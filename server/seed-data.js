@@ -153,4 +153,38 @@ const questions = [
     3),
 ];
 
-module.exports = { questions };
+// Learning Objectives (NIS-style codes). A question is linked to every objective
+// whose `topics` include the question's topic — so a question can (and does)
+// carry several objectives, as the spec requires.
+const objectives = [
+  // Mathematics
+  { subject: 'Mathematics', code: '11.1.1', description: 'Find indefinite and definite integrals of standard functions', topics: ['Integration', 'Applications of Integration'] },
+  { subject: 'Mathematics', code: '11.1.2', description: 'Use integration to find areas and volumes of revolution', topics: ['Applications of Integration'] },
+  { subject: 'Mathematics', code: '11.2.1', description: 'Differentiate products, quotients and composite functions', topics: ['Differentiation'] },
+  { subject: 'Mathematics', code: '11.2.2', description: 'Find and classify stationary points', topics: ['Differentiation'] },
+  { subject: 'Mathematics', code: '11.3.1', description: 'Solve trigonometric equations in a given interval', topics: ['Trigonometry'] },
+  { subject: 'Mathematics', code: '11.3.2', description: 'Express a sin x + b cos x in the form R sin(x + a)', topics: ['Trigonometry'] },
+  { subject: 'Mathematics', code: '11.4.1', description: 'Use formulae for arithmetic and geometric progressions', topics: ['Sequences and Series'] },
+  { subject: 'Mathematics', code: '11.4.2', description: 'Expand expressions using the binomial series', topics: ['Binomial Expansion'] },
+  { subject: 'Mathematics', code: '11.5.1', description: 'Calculate magnitude and unit vectors in three dimensions', topics: ['Vectors'] },
+  { subject: 'Mathematics', code: '11.6.1', description: 'Solve equations involving exponentials and logarithms', topics: ['Logarithms and Exponentials'] },
+  // Chemistry
+  { subject: 'Chemistry', code: '11.1.1', description: 'Describe the structure of atoms and ions', topics: ['Atomic structure'] },
+  { subject: 'Chemistry', code: '11.2.1', description: 'Explain physical properties in terms of bonding', topics: ['Chemical bonding'] },
+  { subject: 'Chemistry', code: '11.3.1', description: 'Write half-equations for electrolysis reactions', topics: ['Electrolysis'] },
+  { subject: 'Chemistry', code: '11.3.2', description: 'Predict the products of electrolysis', topics: ['Electrolysis'] },
+  { subject: 'Chemistry', code: '11.4.1', description: 'Identify functional groups and test for unsaturation', topics: ['Organic Chemistry'] },
+  { subject: 'Chemistry', code: '11.5.1', description: 'Perform mole calculations from balanced equations', topics: ['Stoichiometry'] },
+  // Physics
+  { subject: 'Physics', code: '11.1.1', description: 'Use the equations of uniformly accelerated motion', topics: ['Kinematics', 'Forces and Motion'] },
+  { subject: 'Physics', code: '11.2.1', description: "Apply Newton's second law to resultant forces", topics: ['Forces and Motion'] },
+  { subject: 'Physics', code: '11.3.1', description: 'Use V = IR and calculate electrical energy', topics: ['Electricity'] },
+  { subject: 'Physics', code: '11.4.1', description: 'Relate wave speed, frequency and wavelength', topics: ['Waves'] },
+  // Biology
+  { subject: 'Biology', code: '11.1.1', description: 'Compare plant and animal cell structure', topics: ['Cell Biology'] },
+  { subject: 'Biology', code: '11.2.1', description: 'Predict inheritance using Punnett squares', topics: ['Genetics'] },
+  { subject: 'Biology', code: '11.3.1', description: 'Explain feeding relationships in ecosystems', topics: ['Ecology'] },
+  { subject: 'Biology', code: '11.4.1', description: 'Describe the structure and function of the heart', topics: ['Human Physiology'] },
+];
+
+module.exports = { questions, objectives };

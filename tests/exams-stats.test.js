@@ -129,7 +129,7 @@ test('stats reflect attempts; continue points to unsubmitted exam', async () => 
   } finally { server.close(); }
 });
 
-test('objectives compute per-topic percentages', async () => {
+test('objectives report progress per learning objective (many-to-many)', async () => {
   const { server, api } = await startServer();
   try {
     await login(api);
@@ -141,13 +141,47 @@ test('objectives compute per-topic percentages', async () => {
       await api('POST', '/api/attempts', { question_id: q.id, answer_text: 'ans', mode: 'practice' });
     }
     const obj = (await api('GET', '/api/objectives?subject=Mathematics')).data.objectives;
-    const integ = obj.find((o) => o.topic === 'Integration');
+    // Objectives are LO codes with descriptions, sorted by code.
+    assert.ok(obj.length >= 10);
+    assert.ok(obj.every((o) => o.code && o.description));
+
+    // 11.1.1 covers Integration (q1 3/3, q4 5/5) -> 100% over 2 attempts
+    const integ = obj.find((o) => o.code === '11.1.1');
     assert.strictEqual(integ.pct, 100);
     assert.strictEqual(integ.attempts, 2);
-    const seq = obj.find((o) => o.topic === 'Sequences and Series');
-    assert.strictEqual(seq.pct, 33);
-    const vec = obj.find((o) => o.topic === 'Vectors');
+    // 11.4.1 covers Sequences and Series (q5 1/3) -> 33%
+    assert.strictEqual(obj.find((o) => o.code === '11.4.1').pct, 33);
+    // Unattempted objective reports zero, not missing
+    const vec = obj.find((o) => o.code === '11.5.1');
     assert.strictEqual(vec.pct, 0);
     assert.strictEqual(vec.attempts, 0);
+  } finally { server.close(); }
+});
+
+test('a question maps to several learning objectives', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    const qs = (await api('GET', '/api/questions?subject=Mathematics&year=2025&component=2')).data.questions;
+    // Q2 is Differentiation, covered by BOTH 11.2.1 and 11.2.2
+    const q2 = qs.find((q) => q.number === 2);
+    await api('POST', '/api/attempts', { question_id: q2.id, answer_text: 'ans', mode: 'practice' });
+    const obj = (await api('GET', '/api/objectives?subject=Mathematics')).data.objectives;
+    assert.strictEqual(obj.find((o) => o.code === '11.2.1').attempts, 1);
+    assert.strictEqual(obj.find((o) => o.code === '11.2.2').attempts, 1);
+  } finally { server.close(); }
+});
+
+test('stats report the longest streak alongside the current one', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    let stats = (await api('GET', '/api/stats')).data;
+    assert.strictEqual(stats.longest_streak, 0);
+    const qs = (await api('GET', '/api/questions?subject=Physics')).data.questions;
+    await api('POST', '/api/attempts', { question_id: qs[0].id, answer_text: 'ans', mode: 'practice' });
+    stats = (await api('GET', '/api/stats')).data;
+    assert.strictEqual(stats.streak, 1);
+    assert.strictEqual(stats.longest_streak, 1);
   } finally { server.close(); }
 });
