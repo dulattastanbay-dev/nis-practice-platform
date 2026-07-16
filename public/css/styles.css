@@ -266,6 +266,9 @@ table.results tr:hover td { background:var(--green-tint); }
 .ring-wrap { display:flex; flex-direction:column; align-items:center; margin:18px 0 8px; }
 .ring-label { font-size:12.5px; color:var(--muted); margin-bottom:8px; font-weight:600; }
 .ring-wrap svg circle:last-child { transition:stroke-dashoffset 1s var(--ease); }
+.ring-track { stroke:#e6ece6; }
+[data-theme="dark"] .ring-track { stroke:#2b3a2e; }
+.ring-svg text { fill:var(--text); }
 .conf { font-size:12.5px; color:var(--muted); margin-top:12px; font-weight:600; }
 .conf-bar { height:7px; border-radius:999px; background:#e4ece4; margin-top:6px; overflow:hidden; }
 .conf-bar > i { display:block; height:100%; background:var(--grad-green); transform-origin:left; animation:growX .9s var(--ease); transition:width .5s var(--ease); }
@@ -441,6 +444,7 @@ a.row-item:hover .row-main::after { opacity:1; transform:translateX(0); }
    =========================================================== */
 :root[data-theme="dark"]{
   --green-tint:#18271b;
+  --green-dark:#63cf6d; /* used only as accent TEXT — lighten so it reads on dark */
   --bg:#0e140f; --surface:#182019; --text:#e7efe8; --muted:#95a799;
   --border:#28332b; --border-soft:#202a22;
   --gold-tint:#2a2412; --red-tint:#2a1919; --blue-tint:#152230; --violet-tint:#1e1a2e;

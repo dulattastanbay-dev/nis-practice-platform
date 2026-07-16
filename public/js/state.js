@@ -113,12 +113,12 @@ function ringSVG(value, max, size) {
   const c = 2 * Math.PI * r;
   const frac = max ? Math.min(1, value / max) : 0;
   const cx = size / 2;
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#e6ece6" stroke-width="8"/>
-    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#3d8b40" stroke-width="8"
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="ring-svg">
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" class="ring-track" stroke-width="8"/>
+    <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="#4caf50" stroke-width="8"
       stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - frac)}"
       transform="rotate(-90 ${cx} ${cx})"/>
     <text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle"
-      font-size="${size / 4.6}" font-weight="800" fill="#1f2a1f">${value}/${max}</text>
+      font-size="${size / 4.6}" font-weight="800" fill="currentColor">${value}/${max}</text>
   </svg>`;
 }
