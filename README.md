@@ -14,11 +14,16 @@ npm start
 
 ## Deploy a live URL (Render, free)
 
-GitHub stores the code but doesn't run the Node server. To get a public URL,
-deploy to any Node host. Easiest is [Render](https://render.com) using the
-included `render.yaml` blueprint:
+GitHub stores the code but doesn't run the Node server (GitHub Pages is
+static-only; this app needs its backend). To get a public URL, deploy to any
+Node host. Easiest is [Render](https://render.com) — one click:
 
-1. Sign in to Render with your GitHub account and authorize access to this repo.
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/dulattastanbay-dev/nis-practice-platform)
+
+That button reads the included `render.yaml` blueprint and deploys
+automatically. Or manually:
+
+1. Sign in to Render with your GitHub account.
 2. **New +  →  Blueprint**, pick `nis-practice-platform`, and Render reads
    `render.yaml` and deploys automatically.
 3. In ~2 minutes you get a URL like `https://nis-practice-platform.onrender.com`.
