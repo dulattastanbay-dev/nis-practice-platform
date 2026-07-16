@@ -63,6 +63,42 @@ test('submit grades over the exam question set: duplicate/foreign ids cannot inf
   } finally { server.close(); }
 });
 
+test('exam draft autosaves and resumes exactly where it stopped', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    // no exam yet
+    assert.strictEqual((await api('GET', '/api/exams/current')).status, 404);
+
+    const ex = await api('POST', '/api/exams', { subject: 'Mathematics', year: 2025, component: 2 });
+    const qs = ex.data.questions;
+    const answers = { [qs[0].id]: 'partial work', [qs[2].id]: 'more work' };
+    const save = await api('POST', `/api/exams/${ex.data.exam.id}/draft`, {
+      answers, idx: 2, remaining_sec: 4200,
+    });
+    assert.strictEqual(save.status, 200);
+
+    // simulate closing the browser and coming back
+    const cur = await api('GET', '/api/exams/current');
+    assert.strictEqual(cur.status, 200);
+    assert.strictEqual(cur.data.exam.id, ex.data.exam.id);
+    assert.strictEqual(cur.data.exam.draft_idx, 2);
+    assert.strictEqual(cur.data.exam.draft_remaining_sec, 4200);
+    assert.strictEqual(cur.data.questions.length, 12);
+    assert.deepStrictEqual(cur.data.answers, answers);
+
+    // the resumed draft still submits normally, and disappears from "current"
+    const sub = await api('POST', `/api/exams/${ex.data.exam.id}/submit`, {
+      answers: qs.map((q) => ({ question_id: q.id, answer_text: answers[q.id] || '' })),
+      duration_sec: 600,
+    });
+    assert.strictEqual(sub.status, 200);
+    assert.strictEqual((await api('GET', '/api/exams/current')).status, 404);
+    // drafting a submitted exam is rejected
+    assert.strictEqual((await api('POST', `/api/exams/${ex.data.exam.id}/draft`, { answers: {}, idx: 0 })).status, 409);
+  } finally { server.close(); }
+});
+
 test('stats reflect attempts; continue points to unsubmitted exam', async () => {
   const { server, api } = await startServer();
   try {

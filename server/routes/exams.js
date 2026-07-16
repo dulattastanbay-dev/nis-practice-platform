@@ -64,6 +64,54 @@ router.post('/exams', requireAuth, (req, res) => {
   });
 });
 
+// The user's in-progress (unsubmitted) exam, with any saved draft answers, so a
+// closed browser can resume exactly where it stopped.
+router.get('/exams/current', requireAuth, (req, res) => {
+  const uid = req.session.userId;
+  const exam = db.prepare(
+    'SELECT * FROM exams WHERE user_id=? AND submitted_at IS NULL ORDER BY started_at DESC, id DESC LIMIT 1'
+  ).get(uid);
+  if (!exam) return res.status(404).json({ error: 'no_exam_in_progress' });
+  const questions = db.prepare(
+    `SELECT ${PUB} FROM questions WHERE subject=? AND year=? AND component=? ORDER BY number`
+  ).all(exam.subject, exam.year, exam.component);
+  const list = questions.length
+    ? questions
+    : db.prepare(`SELECT ${PUB} FROM questions WHERE subject=? ORDER BY number LIMIT 12`).all(exam.subject);
+  let answers = {};
+  try { answers = exam.draft_answers ? JSON.parse(exam.draft_answers) : {}; } catch { answers = {}; }
+  const markedIds = db.prepare('SELECT question_id FROM marked WHERE user_id=?').all(uid)
+    .map((r) => r.question_id);
+  res.json({
+    exam: {
+      id: exam.id, subject: exam.subject, year: exam.year, component: exam.component,
+      total: exam.total, duration_min: 90,
+      draft_idx: exam.draft_idx || 0,
+      draft_remaining_sec: exam.draft_remaining_sec,
+    },
+    questions: list,
+    marked_ids: markedIds,
+    answers,
+  });
+});
+
+// Autosaved draft of an in-progress exam.
+router.post('/exams/:id/draft', requireAuth, (req, res) => {
+  const uid = req.session.userId;
+  const exam = db.prepare('SELECT id, submitted_at FROM exams WHERE id=? AND user_id=?').get(req.params.id, uid);
+  if (!exam) return res.status(404).json({ error: 'not_found' });
+  if (exam.submitted_at) return res.status(409).json({ error: 'already_submitted' });
+  const { answers, idx, remaining_sec } = req.body || {};
+  db.prepare('UPDATE exams SET draft_answers=?, draft_idx=?, draft_remaining_sec=? WHERE id=?')
+    .run(
+      JSON.stringify(answers && typeof answers === 'object' ? answers : {}),
+      Math.max(0, Number(idx) || 0),
+      remaining_sec == null ? null : Math.max(0, Number(remaining_sec) || 0),
+      exam.id
+    );
+  res.json({ ok: true });
+});
+
 router.post('/exams/:id/submit', requireAuth, (req, res) => {
   const uid = req.session.userId;
   const exam = db.prepare('SELECT * FROM exams WHERE id=? AND user_id=?').get(req.params.id, uid);

@@ -23,6 +23,25 @@ test('questions require auth and hide answer fields', async () => {
   } finally { server.close(); }
 });
 
+test('questions filter by several years at once (and a single year still works)', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    const math2025 = (await api('GET', '/api/questions?subject=Mathematics&years=2025')).data.questions;
+    assert.strictEqual(math2025.length, 12);
+    // Chemistry/Physics/Biology live in 2024; asking for both years returns the union.
+    const chem2024 = (await api('GET', '/api/questions?subject=Chemistry&years=2024')).data.questions;
+    const both = (await api('GET', '/api/questions?subject=Chemistry&years=2024,2025')).data.questions;
+    assert.strictEqual(both.length, chem2024.length);
+    assert.ok(both.every((q) => [2024, 2025].includes(q.year)));
+    // An empty/absent years param must not filter everything out.
+    const all = (await api('GET', '/api/questions?subject=Mathematics')).data.questions;
+    assert.strictEqual(all.length, 12);
+    const single = (await api('GET', '/api/questions?subject=Mathematics&year=2025')).data.questions;
+    assert.strictEqual(single.length, 12);
+  } finally { server.close(); }
+});
+
 test('topics endpoint lists distinct topics per subject', async () => {
   const { server, api } = await startServer();
   try {

@@ -1,7 +1,7 @@
 Views.bank = async function (root, params) {
   const SUBJECTS = ['Mathematics', 'Chemistry', 'Physics', 'Biology'];
   const YEARS = ['2025', '2024', '2023', '2022', '2021'];
-  const sel = { subject: 'Mathematics', year: '2025', component: '2', topic: '' };
+  const sel = { subject: 'Mathematics', years: ['2025'], component: '2', topic: '' };
   const fixedMode = Boolean(params.qid || params.mistakes); // no filter bar in retry/mistakes mode
   let list = [];
   let idx = 0;
@@ -17,7 +17,8 @@ Views.bank = async function (root, params) {
   async function loadByFilters() {
     const base = `subject=${encodeURIComponent(sel.subject)}`
       + (sel.topic ? `&topic=${encodeURIComponent(sel.topic)}` : '');
-    let r = await api('GET', `/api/questions?${base}&year=${sel.year}&component=${sel.component}`);
+    const years = sel.years.length ? `&years=${sel.years.join(',')}` : '';
+    let r = await api('GET', `/api/questions?${base}${years}&component=${sel.component}`);
     if (r.questions.length === 0) r = await api('GET', `/api/questions?${base}`); // subject-pool fallback
     return r.questions;
   }
@@ -37,14 +38,21 @@ Views.bank = async function (root, params) {
   }
 
   function filterBarHTML() {
-    return `<div class="card"><div class="filter-row">
-      ${filterSelHTML('subject', t('papers.subject'), SUBJECTS.map((s) => [s, t('subj.' + s)]))}
-      ${filterSelHTML('year', t('papers.year'), YEARS.map((y) => [y, y]))}
-      ${filterSelHTML('component', t('papers.paper'), ['1', '2', '3'].map((c) => [c, t('papers.component', { n: c })]))}
-      ${filterSelHTML('topic', t('bank.topic'), [['', t('bank.all')]].concat(topics.map((x) => [x, x])))}
-      <button class="btn btn-primary" id="f-start">${t('bank.start')}</button>
-      <button class="btn btn-outline" id="f-random">${t('bank.random')}</button>
-    </div></div>`;
+    return `<div class="card">
+      <div class="filter-row">
+        ${filterSelHTML('subject', t('papers.subject'), SUBJECTS.map((s) => [s, t('subj.' + s)]))}
+        ${filterSelHTML('component', t('papers.paper'), ['1', '2', '3'].map((c) => [c, t('papers.component', { n: c })]))}
+        ${filterSelHTML('topic', t('bank.topic'), [['', t('bank.all')]].concat(topics.map((x) => [x, x])))}
+        <button class="btn btn-primary" id="f-start">${t('bank.start')}</button>
+        <button class="btn btn-outline" id="f-random">${t('bank.random')}</button>
+      </div>
+      <div style="margin-top:14px">
+        <label class="yr-label">${t('bank.years')}</label>
+        <div class="choice-row" style="margin:8px 0 0" id="yr-row">
+          ${YEARS.map((y) => `<button class="choice btn-sm ${sel.years.includes(y) ? 'selected' : ''}" data-y="${y}">${y}</button>`).join('')}
+        </div>
+      </div>
+    </div>`;
   }
 
   function qCardHTML(qq) {
@@ -79,8 +87,6 @@ Views.bank = async function (root, params) {
         <div class="ring-label">${t('bank.expected')}</div>
         <div id="fb-ring"></div>
       </div>
-      <div class="conf hidden" id="fb-conf"></div>
-      <div class="conf-bar"><i id="fb-conf-bar" style="width:0%"></i></div>
     </div>`;
   }
 
@@ -99,6 +105,18 @@ Views.bank = async function (root, params) {
         s.addEventListener('change', async () => {
           sel[s.dataset.k] = s.value;
           if (s.dataset.k === 'subject') { sel.topic = ''; await loadTopics(); draw(); }
+        });
+      });
+      // Years are multi-select: toggle chips, keeping at least one selected.
+      root.querySelectorAll('#yr-row .choice').forEach((b) => {
+        b.addEventListener('click', () => {
+          const y = b.dataset.y;
+          if (sel.years.includes(y)) {
+            if (sel.years.length > 1) sel.years = sel.years.filter((v) => v !== y);
+          } else {
+            sel.years.push(y);
+          }
+          b.classList.toggle('selected', sel.years.includes(y));
         });
       });
       root.querySelector('#f-start').addEventListener('click', async () => {
@@ -144,11 +162,6 @@ Views.bank = async function (root, params) {
       fbText.classList.remove('muted');
       fbText.innerHTML = r.ai_feedback;
       root.querySelector('#fb-ring').innerHTML = ringSVG(r.awarded_mark, r.marks, 96);
-      const conf = root.querySelector('#fb-conf');
-      conf.classList.remove('hidden');
-      conf.textContent = t('bank.confidence', { level: t('bank.conf.' + r.confidence) });
-      root.querySelector('#fb-conf-bar').style.width =
-        { high: '90%', medium: '60%', low: '30%' }[r.confidence];
       scheme = r.mark_scheme;
       root.querySelector('#p-scheme').disabled = false;
       renderMath(root);

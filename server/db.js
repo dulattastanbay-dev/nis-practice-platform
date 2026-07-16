@@ -39,7 +39,10 @@ CREATE TABLE IF NOT EXISTS exams (
   total INTEGER NOT NULL,
   score INTEGER,
   started_at TEXT NOT NULL DEFAULT (datetime('now')),
-  submitted_at TEXT
+  submitted_at TEXT,
+  draft_answers TEXT,
+  draft_idx INTEGER,
+  draft_remaining_sec INTEGER
 );
 CREATE TABLE IF NOT EXISTS attempts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,6 +62,12 @@ CREATE TABLE IF NOT EXISTS marked (
   PRIMARY KEY (user_id, question_id)
 );
 `);
+
+// Lightweight migrations so databases created before these columns keep working.
+const examCols = db.prepare('PRAGMA table_info(exams)').all().map((c) => c.name);
+for (const [col, type] of [['draft_answers', 'TEXT'], ['draft_idx', 'INTEGER'], ['draft_remaining_sec', 'INTEGER']]) {
+  if (!examCols.includes(col)) db.exec(`ALTER TABLE exams ADD COLUMN ${col} ${type}`);
+}
 
 const count = db.prepare('SELECT COUNT(*) AS n FROM questions').get().n;
 if (count === 0) {

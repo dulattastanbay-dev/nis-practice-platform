@@ -6,11 +6,18 @@ const router = express.Router();
 const PUB = 'id, subject, year, component, number, marks, topic, text_latex, figure_svg';
 
 router.get('/questions', requireAuth, (req, res) => {
-  const { subject, year, component, topic } = req.query;
+  const { subject, year, years, component, topic } = req.query;
   const where = [];
   const args = [];
   if (subject) { where.push('subject = ?'); args.push(subject); }
-  if (year) { where.push('year = ?'); args.push(Number(year)); }
+  // `years` (comma-separated) allows selecting several years at once; `year` kept for callers passing one.
+  const yearList = String(years || '').split(',')
+    .map((v) => v.trim()).filter(Boolean)
+    .map(Number).filter(Number.isInteger);
+  if (yearList.length) {
+    where.push(`year IN (${yearList.map(() => '?').join(',')})`);
+    args.push(...yearList);
+  } else if (year) { where.push('year = ?'); args.push(Number(year)); }
   if (component) { where.push('component = ?'); args.push(Number(component)); }
   if (topic) { where.push('topic = ?'); args.push(topic); }
   const sql = `SELECT ${PUB} FROM questions`

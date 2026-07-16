@@ -1,3 +1,13 @@
+// One motivational quote per day — same quote all day, rotates on date.
+function motivationHTML() {
+  const QUOTES = 15;
+  const day = Math.floor(Date.parse(new Date().toISOString().slice(0, 10)) / 86400000);
+  return `<div class="card motivation">
+    <div class="section-title">${icon('sparkles')}${t('dash.motivation')}</div>
+    <p class="quote">${t('quote.' + (day % QUOTES))}</p>
+  </div>`;
+}
+
 function statCard(icon, value, label, count, suffix) {
   const val = count === undefined
     ? value
@@ -15,11 +25,11 @@ function heatmapHTML(cells) {
 
 function continueCardHTML(cont) {
   if (!cont) return '';
-  const href = `#/exam?subject=${encodeURIComponent(cont.subject)}&year=${cont.year}&component=${cont.component}`;
+  // resume=1 reopens the saved draft; starting from the paper picker would discard it.
   return `<div style="margin-top:16px;padding:14px;background:var(--green-tint);border-radius:12px">
     <div class="section-title" style="margin-bottom:6px">${t('dash.continue')}</div>
     <div class="row-sub">${t('subj.' + cont.subject)} · ${cont.year} · ${t('papers.component', { n: cont.component })}</div>
-    <a class="btn btn-primary btn-sm" style="margin-top:10px" href="${href}">${t('dash.continueBtn')}</a>
+    <a class="btn btn-primary btn-sm" style="margin-top:10px" href="#/exam?resume=1">${t('dash.continueExam')}</a>
   </div>`;
 }
 
@@ -48,7 +58,7 @@ Views.dashboard = async function (root) {
     <div class="grid-4">
       ${statCard(icon('flame'), s.streak, t('dash.streak'), s.streak)}
       ${statCard(icon('clock'), fmtDuration(s.time_today_sec), t('dash.today'))}
-      ${statCard(icon('checkCircle'), s.solved, t('dash.solved'), s.solved)}
+      ${statCard(icon('checkCircle'), s.today_count, t('dash.solved'), s.today_count)}
       ${statCard(icon('target'), s.accuracy + '%', t('dash.accuracy'), s.accuracy, '%')}
     </div>
     <div class="grid-2">
@@ -68,6 +78,7 @@ Views.dashboard = async function (root) {
         ).join('')}
       </div>
     </div>
+    ${motivationHTML()}
     <div class="grid-2">
       <div class="card">
         <div class="section-title">${t('dash.recent')}</div>
