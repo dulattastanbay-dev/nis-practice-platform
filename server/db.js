@@ -55,6 +55,14 @@ CREATE TABLE IF NOT EXISTS attempts (
   duration_sec INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS ai_feedback (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  attempt_id INTEGER NOT NULL REFERENCES attempts(id),
+  explanation TEXT NOT NULL,
+  estimated_mark INTEGER NOT NULL,
+  model TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS images (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   question_id INTEGER NOT NULL REFERENCES questions(id),

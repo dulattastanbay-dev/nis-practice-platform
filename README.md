@@ -38,6 +38,33 @@ Open http://localhost:3000 and register an account (any email works — it is a
 local demo database). Your progress, mistakes, marked questions, streak and
 heatmap are all computed from your own activity.
 
+## AI feedback (optional)
+
+Marking uses the real model when an API key is present, and falls back to the
+preset per-question mark and feedback when it isn't — the site works either way.
+
+```
+# Local
+set ANTHROPIC_API_KEY=sk-ant-...      # PowerShell: $env:ANTHROPIC_API_KEY="sk-ant-..."
+npm start
+
+# Render: Dashboard -> your service -> Environment -> add ANTHROPIC_API_KEY
+```
+
+Optional `ANTHROPIC_MODEL` (default `claude-sonnet-5`). When enabled, each
+submitted answer is marked against its mark scheme and the explanation is stored
+in the `ai_feedback` table. Never commit a key — it belongs in the environment.
+
+## Importing past papers
+
+PDFs are read once, at import; everything afterwards runs off the database.
+See [docs/import-format.md](docs/import-format.md):
+
+```
+node server/import-paper.js --extract paper.pdf > draft.json
+node server/import-paper.js draft.json
+```
+
 ## What's real vs. demo
 
 - **Real:** accounts (bcrypt-hashed passwords, session cookies), and every

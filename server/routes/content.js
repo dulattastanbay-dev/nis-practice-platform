@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth } = require('../auth');
+const ai = require('../ai');
 
 const router = express.Router();
 const PUB = 'id, subject, year, component, number, marks, topic, text_latex, figure_svg,'
@@ -54,53 +55,87 @@ router.get('/topics', requireAuth, (req, res) => {
   res.json({ topics: rows.map((r) => r.topic) });
 });
 
-router.post('/attempts', requireAuth, (req, res) => {
-  const { question_id, answer_text, answers, mode, duration_sec } = req.body || {};
-  if (mode !== 'practice') return res.status(400).json({ error: 'bad_mode' }); // exam answers go via /exams/:id/submit
-  const q = db.prepare('SELECT * FROM questions WHERE id=?').get(question_id);
-  if (!q) return res.status(404).json({ error: 'not_found' });
-  const uid = req.session.userId;
-  const dur = Math.max(0, Number(duration_sec) || 0);
-  const ins = db.prepare(`INSERT INTO attempts (user_id, question_id, part_id, answer_text, awarded_mark, mode, duration_sec)
-              VALUES (?,?,?,?,?,'practice',?)`);
+const insFeedback = db.prepare(
+  'INSERT INTO ai_feedback (attempt_id, explanation, estimated_mark, model) VALUES (?,?,?,?)'
+);
 
-  // A question split into (a)(b)(c) is answered and marked one part at a time.
-  const parts = partsGrading.all(q.id);
-  if (parts.length) {
-    const given = answers && typeof answers === 'object' ? answers : {};
-    const per = Math.round(dur / parts.length);
-    let awardedTotal = 0;
-    const details = parts.map((p) => {
-      const text = String(given[p.id] || '');
-      const a = text.trim() ? p.expected_mark : 0;
-      awardedTotal += a;
-      ins.run(uid, q.id, p.id, text, a, per);
-      return {
-        part_id: p.id, letter: p.letter, marks: p.marks,
-        awarded_mark: a, ai_feedback: p.ai_feedback, mark_scheme: p.mark_scheme,
-      };
-    });
+// Mark one answerable unit. Uses the real model when a key is configured and
+// falls back to the preset mark/feedback otherwise (spec: the site must keep
+// working when AI is unavailable).
+async function markUnit({ text, unit, questionText }) {
+  const graded = await ai.markAnswer({
+    questionText,
+    markScheme: unit.mark_scheme,
+    maxMarks: unit.marks,
+    answer: text,
+  });
+  if (graded) return { awarded: graded.mark, feedback: graded.feedback, byAI: true };
+  return {
+    awarded: text.trim() ? unit.expected_mark : 0,
+    feedback: unit.ai_feedback,
+    byAI: false,
+  };
+}
+
+router.post('/attempts', requireAuth, async (req, res, next) => {
+  try {
+    const { question_id, answer_text, answers, mode, duration_sec } = req.body || {};
+    if (mode !== 'practice') return res.status(400).json({ error: 'bad_mode' }); // exam answers go via /exams/:id/submit
+    const q = db.prepare('SELECT * FROM questions WHERE id=?').get(question_id);
+    if (!q) return res.status(404).json({ error: 'not_found' });
+    const uid = req.session.userId;
+    const dur = Math.max(0, Number(duration_sec) || 0);
+    const ins = db.prepare(`INSERT INTO attempts (user_id, question_id, part_id, answer_text, awarded_mark, mode, duration_sec)
+                VALUES (?,?,?,?,?,'practice',?)`);
+
+    function record(qid, partId, text, awarded, dSec, feedback, byAI) {
+      const info = ins.run(uid, qid, partId, text, awarded, dSec);
+      if (byAI) insFeedback.run(Number(info.lastInsertRowid), feedback, awarded, ai.MODEL);
+    }
+
+    // A question split into (a)(b)(c) is answered and marked one part at a time.
+    const parts = partsGrading.all(q.id);
+    if (parts.length) {
+      const given = answers && typeof answers === 'object' ? answers : {};
+      const per = Math.round(dur / parts.length);
+      let awardedTotal = 0;
+      const details = [];
+      for (const p of parts) {
+        const text = String(given[p.id] || '');
+        const m = await markUnit({ text, unit: p, questionText: `${q.text_latex}\n(${p.letter}) ${p.text_latex}` });
+        awardedTotal += m.awarded;
+        record(q.id, p.id, text, m.awarded, per, m.feedback, m.byAI);
+        details.push({
+          part_id: p.id, letter: p.letter, marks: p.marks,
+          awarded_mark: m.awarded, ai_feedback: m.feedback, mark_scheme: p.mark_scheme,
+        });
+      }
+      return res.json({
+        awarded_mark: awardedTotal,
+        expected_mark: q.expected_mark,
+        marks: q.marks,
+        parts: details,
+        ai_feedback: q.ai_feedback,
+        mark_scheme: q.mark_scheme,
+        ai_enabled: ai.isEnabled(),
+      });
+    }
+
+    const text = String(answer_text || '');
+    const m = await markUnit({ text, unit: q, questionText: q.text_latex });
+    record(q.id, null, text, m.awarded, dur, m.feedback, m.byAI);
     return res.json({
-      awarded_mark: awardedTotal,
+      awarded_mark: m.awarded,
       expected_mark: q.expected_mark,
       marks: q.marks,
-      parts: details,
-      ai_feedback: q.ai_feedback,
+      parts: [],
+      ai_feedback: m.feedback,
       mark_scheme: q.mark_scheme,
+      ai_enabled: ai.isEnabled(),
     });
+  } catch (err) {
+    return next(err);
   }
-
-  const text = String(answer_text || '');
-  const awarded = text.trim() ? q.expected_mark : 0;
-  ins.run(uid, q.id, null, text, awarded, dur);
-  res.json({
-    awarded_mark: awarded,
-    expected_mark: q.expected_mark,
-    marks: q.marks,
-    parts: [],
-    ai_feedback: q.ai_feedback,
-    mark_scheme: q.mark_scheme,
-  });
 });
 
 router.get('/marked', requireAuth, (req, res) => {

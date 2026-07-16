@@ -42,6 +42,45 @@ test('questions filter by several years at once (and a single year still works)'
   } finally { server.close(); }
 });
 
+test('marking works with no AI configured, and reports ai_enabled=false', async () => {
+  const { server, api } = await startServer();
+  try {
+    delete process.env.ANTHROPIC_API_KEY; // spec: site must work when AI is unavailable
+    await login(api);
+    const qs = (await api('GET', '/api/questions?subject=Mathematics&years=2025')).data.questions;
+    const q1 = qs.find((q) => q.number === 1);
+    const r = await api('POST', '/api/attempts', {
+      question_id: q1.id, answer_text: 'x^3/3 + 3x^2/2 + C', mode: 'practice',
+    });
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.data.ai_enabled, false);
+    assert.strictEqual(r.data.awarded_mark, 3);      // preset fallback marking
+    assert.ok(r.data.ai_feedback.length > 0);        // preset fallback feedback
+  } finally { server.close(); }
+});
+
+test('a part question is marked and answered part by part', async () => {
+  const { server, api } = await startServer();
+  try {
+    await login(api);
+    const qs = (await api('GET', '/api/questions?subject=Mathematics&years=2025')).data.questions;
+    const q12 = qs.find((q) => q.number === 12);
+    assert.strictEqual(q12.parts.length, 3);
+    const answers = {};
+    q12.parts.forEach((p) => { answers[p.id] = 'worked answer'; });
+    const r = await api('POST', '/api/attempts', { question_id: q12.id, answers, mode: 'practice' });
+    assert.strictEqual(r.status, 200);
+    assert.strictEqual(r.data.parts.length, 3);
+    assert.strictEqual(r.data.awarded_mark, 8);
+    assert.strictEqual(r.data.marks, 10);
+    // Answering only (a) scores only (a)'s marks.
+    const only = {};
+    only[q12.parts[0].id] = 'just part a';
+    const r2 = await api('POST', '/api/attempts', { question_id: q12.id, answers: only, mode: 'practice' });
+    assert.strictEqual(r2.data.awarded_mark, 3);
+  } finally { server.close(); }
+});
+
 test('topics endpoint lists distinct topics per subject', async () => {
   const { server, api } = await startServer();
   try {
