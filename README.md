@@ -12,6 +12,23 @@ npm install
 npm start
 ```
 
+## Deploy a live URL (Render, free)
+
+GitHub stores the code but doesn't run the Node server. To get a public URL,
+deploy to any Node host. Easiest is [Render](https://render.com) using the
+included `render.yaml` blueprint:
+
+1. Sign in to Render with your GitHub account and authorize access to this repo.
+2. **New +  →  Blueprint**, pick `nis-practice-platform`, and Render reads
+   `render.yaml` and deploys automatically.
+3. In ~2 minutes you get a URL like `https://nis-practice-platform.onrender.com`.
+
+Notes: requires Node ≥ 22.5 (pinned to 24 in the blueprint) for the built-in
+`node:sqlite`. The free plan's disk is ephemeral, so accounts/progress reset on
+each restart — fine for a demo; add a Render persistent disk to keep data.
+Other Node hosts (Railway, Fly.io, a VPS) work the same way: `npm install`
+then `npm start`, with `PORT` provided by the platform.
+
 Open http://localhost:3000 and register an account (any email works — it is a
 local demo database). Your progress, mistakes, marked questions, streak and
 heatmap are all computed from your own activity.

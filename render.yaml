@@ -1,0 +1,14 @@
+# One-click deploy blueprint for Render (https://render.com).
+# Free Node web service. Render injects PORT automatically (the server reads it).
+# Note: the free plan has an ephemeral filesystem, so data.sqlite resets on each
+# deploy/restart — fine for a demo. Add a Render persistent disk (paid) to keep data.
+services:
+  - type: web
+    name: nis-practice-platform
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
