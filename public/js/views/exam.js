@@ -113,12 +113,16 @@ Views.exam = async function (root, params) {
   };
   tick();
 
+  // Answers are keyed per answerable unit: "p<partId>" for parts, question id otherwise.
   function saveCurrent() {
-    const ta = root.querySelector('#answer');
-    if (ta) st.answers[st.qs[st.idx].id] = ta.value;
+    root.querySelectorAll('#q-card textarea.answer').forEach((ta) => {
+      st.answers[ta.dataset.key] = ta.value;
+    });
   }
 
   function answered(q) {
+    const parts = q.parts || [];
+    if (parts.length) return parts.every((p) => String(st.answers['p' + p.id] || '').trim());
     return String(st.answers[q.id] || '').trim().length > 0;
   }
 
@@ -150,15 +154,17 @@ Views.exam = async function (root, params) {
         <button class="star-btn ${isMarked ? 'on' : ''}" id="star">${icon(isMarked ? 'star' : 'starOutline')} ${isMarked ? t('exam.saved') : t('exam.save')}</button>
       </div>
       <div class="q-text">${qq.text_latex}</div>
-      ${qq.figure_svg || ''}
-      <textarea class="answer" id="answer" placeholder="${t('exam.placeholder')}">${esc(st.answers[qq.id] || '')}</textarea>`;
+      ${figuresHTML(qq)}
+      ${answerBoxesHTML(qq, st.answers)}`;
     root.querySelector('#q-count').textContent = t('exam.qOf', { a: st.idx + 1, b: st.qs.length });
     root.querySelector('#prev').disabled = st.idx === 0;
     root.querySelector('#next').classList.toggle('hidden', st.idx === st.qs.length - 1);
-    qCard.querySelector('#answer').addEventListener('input', () => {
-      saveCurrent();
-      drawNav();
-      scheduleSave();
+    qCard.querySelectorAll('textarea.answer').forEach((ta) => {
+      ta.addEventListener('input', () => {
+        saveCurrent();
+        drawNav();
+        scheduleSave();
+      });
     });
     qCard.querySelector('#star').addEventListener('click', async () => {
       const on = st.marked.has(qq.id);
@@ -180,7 +186,17 @@ Views.exam = async function (root, params) {
     saveCurrent();
     clearInterval(iv);
     clearTimeout(saveTimer);
-    const answers = st.qs.map((qq) => ({ question_id: qq.id, answer_text: st.answers[qq.id] || '' }));
+    const answers = [];
+    for (const qq of st.qs) {
+      const parts = qq.parts || [];
+      if (parts.length) {
+        for (const p of parts) {
+          answers.push({ question_id: qq.id, part_id: p.id, answer_text: st.answers['p' + p.id] || '' });
+        }
+      } else {
+        answers.push({ question_id: qq.id, answer_text: st.answers[qq.id] || '' });
+      }
+    }
     const duration = Math.round((Date.now() - st.started) / 1000);
     try {
       const r = await api('POST', `/api/exams/${st.exam.id}/submit`, { answers, duration_sec: duration });

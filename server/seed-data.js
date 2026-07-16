@@ -76,7 +76,7 @@ const questions = [
     'Correct log laws throughout — just double-check the 3 s.f. rounding at the end.',
     5),
   q('Mathematics', 2025, 2, 12, 10, 'Applications of Integration',
-    'The curve \\(y = x^{2} - 4x + 5\\) and the line \\(y = 2x - 3\\) intersect at two points. (a) Find the coordinates of the points of intersection. (b) Find the exact area of the region enclosed between the curve and the line. (c) The region is rotated through \\(360^{\\circ}\\) about the \\(x\\)-axis. Write down, but do not evaluate, an integral expression for the volume generated.',
+    'The curve \\(y = x^{2} - 4x + 5\\) and the line \\(y = 2x - 3\\) intersect at two points.',
     '(a) M1 A1 \\(x = 2\\) and \\(x = 4\\); (b) M1 subtract functions; M1 integrate; A2 area \\(\\frac{4}{3}\\); (c) M1 A1 \\(\\pi\\int_{2}^{4}\\big((2x-3)^{2} - (x^{2}-4x+5)^{2}\\big)\\,dx\\); B2 presentation.',
     'A well-structured answer. Parts (a) and (b) are solid; in (c) make sure the outer function is the line, which lies above the curve on this interval.',
     8),
@@ -88,7 +88,7 @@ const questions = [
     'Careful with the electrons — a 3+ ion has lost three electrons relative to the atom.',
     2),
   q('Chemistry', 2024, 1, 2, 4, 'Electrolysis',
-    'Molten lead(II) bromide is electrolysed using inert electrodes. Write the half-equations for the reactions at the cathode and the anode, and state one observation at each electrode.',
+    'Molten lead(II) bromide is electrolysed using inert electrodes.',
     'M1 A1 cathode \\(\\mathrm{Pb}^{2+} + 2e^{-} \\rightarrow \\mathrm{Pb}\\); M1 A1 anode \\(2\\mathrm{Br}^{-} \\rightarrow \\mathrm{Br}_{2} + 2e^{-}\\).',
     'Good half-equations. Remember oxidation happens at the anode — electrons appear on the right-hand side.',
     3),
@@ -153,6 +153,51 @@ const questions = [
     3),
 ];
 
+// Question parts — many real questions are split into (a) (b) (c), each with its
+// own marks and mark scheme. Part marks/expected sum to the parent question's, so
+// paper totals stay intact (Mathematics 2025 C2 = 60 marks / 48 expected).
+const parts = [
+  {
+    subject: 'Mathematics', year: 2025, component: 2, number: 12,
+    items: [
+      { letter: 'a', marks: 3, expected: 3,
+        text: 'Find the coordinates of the points of intersection.',
+        scheme: 'M1 equate the two expressions; A1 \\(x = 2\\) and \\(x = 4\\); A1 both coordinate pairs.',
+        feedback: 'Correct — equating the curve and the line and solving the quadratic is exactly right.' },
+      { letter: 'b', marks: 4, expected: 3,
+        text: 'Find the exact area of the region enclosed between the curve and the line.',
+        scheme: 'M1 subtract the functions; M1 integrate between the limits; A2 exact area \\(\\frac{4}{3}\\).',
+        feedback: 'Good method. Remember to subtract the curve from the line (the line is above on this interval) before integrating.' },
+      { letter: 'c', marks: 3, expected: 2,
+        text: 'The region is rotated through \\(360^{\\circ}\\) about the \\(x\\)-axis. Write down, but do not evaluate, an integral expression for the volume generated.',
+        scheme: 'M1 \\(\\pi\\int (y_{outer}^{2} - y_{inner}^{2})\\,dx\\); A1 \\(\\pi\\int_{2}^{4}\\big((2x-3)^{2} - (x^{2}-4x+5)^{2}\\big)\\,dx\\).',
+        feedback: 'Nearly — the outer radius is the line and the inner radius is the curve, so square each separately rather than squaring the difference.' },
+    ],
+  },
+  {
+    subject: 'Chemistry', year: 2024, component: 1, number: 2,
+    items: [
+      { letter: 'a', marks: 2, expected: 2,
+        text: 'Write the half-equation for the reaction at the cathode and state one observation.',
+        scheme: 'M1 \\(\\mathrm{Pb}^{2+} + 2e^{-} \\rightarrow \\mathrm{Pb}\\); A1 silvery molten lead forms.',
+        feedback: 'Correct — reduction at the cathode, with the electrons on the left-hand side.' },
+      { letter: 'b', marks: 2, expected: 1,
+        text: 'Write the half-equation for the reaction at the anode and state one observation.',
+        scheme: 'M1 \\(2\\mathrm{Br}^{-} \\rightarrow \\mathrm{Br}_{2} + 2e^{-}\\); A1 red-brown bromine vapour.',
+        feedback: 'Oxidation happens at the anode, so the electrons belong on the right-hand side; also give the observation.' },
+    ],
+  },
+];
+
+// Figures. Stored separately so a question can carry several images, each with a
+// caption and the page it came from in the original paper.
+const images = [
+  {
+    subject: 'Mathematics', year: 2025, component: 2, number: 6,
+    svg: FIG_Q6, caption: 'Sketch of y = 2 cos x + sec x with the shaded region', page: 7,
+  },
+];
+
 // Learning Objectives (NIS-style codes). A question is linked to every objective
 // whose `topics` include the question's topic — so a question can (and does)
 // carry several objectives, as the spec requires.
@@ -187,4 +232,4 @@ const objectives = [
   { subject: 'Biology', code: '11.4.1', description: 'Describe the structure and function of the heart', topics: ['Human Physiology'] },
 ];
 
-module.exports = { questions, objectives };
+module.exports = { questions, objectives, parts, images };

@@ -6,6 +6,19 @@ async function login(api) {
   await api('POST', '/api/register', { email: 'a@b.co', password: 'secret123', name: 'Aya' });
 }
 
+// Answer every question, sending one entry per part where a question has parts.
+function answerAll(questions, text = 'my answer') {
+  const out = [];
+  for (const q of questions) {
+    if (q.parts && q.parts.length) {
+      for (const p of q.parts) out.push({ question_id: q.id, part_id: p.id, answer_text: text });
+    } else {
+      out.push({ question_id: q.id, answer_text: text });
+    }
+  }
+  return out;
+}
+
 test('exam create returns full paper or subject fallback', async () => {
   const { server, api } = await startServer();
   try {
@@ -27,7 +40,7 @@ test('exam submit grades, stores results, blocks resubmit', async () => {
   try {
     await login(api);
     const ex = await api('POST', '/api/exams', { subject: 'Mathematics', year: 2025, component: 2 });
-    const answers = ex.data.questions.map((q) => ({ question_id: q.id, answer_text: 'my answer' }));
+    const answers = answerAll(ex.data.questions);
     const sub = await api('POST', `/api/exams/${ex.data.exam.id}/submit`, { answers, duration_sec: 3600 });
     assert.strictEqual(sub.status, 200);
     assert.strictEqual(sub.data.exam.score, 48);
@@ -35,6 +48,12 @@ test('exam submit grades, stores results, blocks resubmit', async () => {
     assert.strictEqual(sub.data.results.length, 12);
     assert.strictEqual(sub.data.results[0].number, 1);
     assert.ok(sub.data.results[0].ai_feedback.length > 0);
+    // Q12 is split into (a)(b)(c); results merge its parts into one question row.
+    const q12 = sub.data.results.find((r) => r.number === 12);
+    assert.strictEqual(q12.parts.length, 3);
+    assert.deepStrictEqual(q12.parts.map((p) => p.letter), ['a', 'b', 'c']);
+    assert.strictEqual(q12.awarded_mark, 8);
+    assert.strictEqual(q12.marks, 10);
     const again = await api('POST', `/api/exams/${ex.data.exam.id}/submit`, { answers, duration_sec: 1 });
     assert.strictEqual(again.status, 409);
     const get = await api('GET', `/api/exams/${ex.data.exam.id}`);
@@ -51,9 +70,7 @@ test('submit grades over the exam question set: duplicate/foreign ids cannot inf
     // Repeat every question 3x and append a foreign id from another subject.
     const foreign = (await api('GET', '/api/questions?subject=Physics')).data.questions[0];
     const answers = [];
-    for (const q of qs) {
-      for (let i = 0; i < 3; i += 1) answers.push({ question_id: q.id, answer_text: 'dup' });
-    }
+    for (let i = 0; i < 3; i += 1) answers.push(...answerAll(qs, 'dup'));
     answers.push({ question_id: foreign.id, answer_text: 'foreign' });
     const sub = await api('POST', `/api/exams/${ex.data.exam.id}/submit`, { answers, duration_sec: 600 });
     assert.strictEqual(sub.status, 200);
@@ -89,7 +106,7 @@ test('exam draft autosaves and resumes exactly where it stopped', async () => {
 
     // the resumed draft still submits normally, and disappears from "current"
     const sub = await api('POST', `/api/exams/${ex.data.exam.id}/submit`, {
-      answers: qs.map((q) => ({ question_id: q.id, answer_text: answers[q.id] || '' })),
+      answers: answerAll(qs, 'resumed answer'),
       duration_sec: 600,
     });
     assert.strictEqual(sub.status, 200);
@@ -110,7 +127,7 @@ test('stats reflect attempts; continue points to unsubmitted exam', async () => 
     assert.strictEqual(stats.continue, null);
 
     const ex = await api('POST', '/api/exams', { subject: 'Mathematics', year: 2025, component: 2 });
-    const answers = ex.data.questions.map((q) => ({ question_id: q.id, answer_text: 'ans' }));
+    const answers = answerAll(ex.data.questions, 'ans');
     await api('POST', `/api/exams/${ex.data.exam.id}/submit`, { answers, duration_sec: 600 });
 
     stats = (await api('GET', '/api/stats')).data;

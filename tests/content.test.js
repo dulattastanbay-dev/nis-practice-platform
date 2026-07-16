@@ -67,7 +67,8 @@ test('practice attempt grades expected mark for non-empty, 0 for empty', async (
     assert.strictEqual(good.data.marks, 3);
     assert.ok(good.data.ai_feedback.length > 0);
     assert.ok(good.data.mark_scheme.length > 0);
-    assert.strictEqual(good.data.confidence, 'high');
+    // Confidence is deliberately not reported (spec: it is never displayed).
+    assert.strictEqual(good.data.confidence, undefined);
     const empty = await api('POST', '/api/attempts', {
       question_id: q1.id, answer_text: '   ', mode: 'practice', duration_sec: 5,
     });

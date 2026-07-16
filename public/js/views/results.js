@@ -32,11 +32,22 @@ Views.results = async function (root, params) {
           <b>${r.awarded_mark} / ${r.marks}</b>
         </div>
         <div class="q-text">${r.text_latex}</div>
-        ${r.figure_svg || ''}
-        <div class="row-sub" style="margin-bottom:8px">${t('results.yourAnswer')}:
-          ${r.answer_text.trim() ? esc(r.answer_text) : t('results.noAnswer')}</div>
-        <div class="fb-text">💡 ${r.ai_feedback}</div>
-        <div class="scheme-box">📋 ${r.mark_scheme}</div>
+        ${figuresHTML(r)}
+        ${r.parts && r.parts.length ? r.parts.map((p) => `
+          <div class="part">
+            <div class="part-head">
+              <span class="part-letter">(${esc(p.letter)})</span>
+              <span class="part-marks">${p.awarded_mark} / ${p.marks}</span>
+            </div>
+            <div class="row-sub" style="margin-bottom:8px">${t('results.yourAnswer')}:
+              ${p.answer_text.trim() ? esc(p.answer_text) : t('results.noAnswer')}</div>
+            <div class="fb-text">${p.ai_feedback}</div>
+            <div class="scheme-box">${p.mark_scheme}</div>
+          </div>`).join('') : `
+          <div class="row-sub" style="margin-bottom:8px">${t('results.yourAnswer')}:
+            ${r.answer_text.trim() ? esc(r.answer_text) : t('results.noAnswer')}</div>
+          <div class="fb-text">${r.ai_feedback}</div>
+          <div class="scheme-box">${r.mark_scheme}</div>`}
       </div>`).join('');
   }
 

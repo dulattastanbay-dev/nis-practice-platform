@@ -55,6 +55,27 @@ CREATE TABLE IF NOT EXISTS attempts (
   duration_sec INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE TABLE IF NOT EXISTS images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  question_id INTEGER NOT NULL REFERENCES questions(id),
+  part_id INTEGER REFERENCES question_parts(id),
+  svg TEXT NOT NULL,
+  caption TEXT,
+  original_pdf_page INTEGER,
+  display_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS question_parts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  question_id INTEGER NOT NULL REFERENCES questions(id),
+  letter TEXT NOT NULL,
+  text_latex TEXT NOT NULL,
+  marks INTEGER NOT NULL,
+  expected_mark INTEGER NOT NULL,
+  mark_scheme TEXT NOT NULL,
+  ai_feedback TEXT NOT NULL,
+  display_order INTEGER NOT NULL,
+  UNIQUE (question_id, letter)
+);
 CREATE TABLE IF NOT EXISTS learning_objectives (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   subject TEXT NOT NULL,
@@ -76,10 +97,19 @@ CREATE TABLE IF NOT EXISTS marked (
 `);
 
 // Lightweight migrations so databases created before these columns keep working.
-const examCols = db.prepare('PRAGMA table_info(exams)').all().map((c) => c.name);
-for (const [col, type] of [['draft_answers', 'TEXT'], ['draft_idx', 'INTEGER'], ['draft_remaining_sec', 'INTEGER']]) {
-  if (!examCols.includes(col)) db.exec(`ALTER TABLE exams ADD COLUMN ${col} ${type}`);
+function addColumns(table, cols) {
+  const have = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  for (const [col, type] of cols) {
+    if (!have.includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
+  }
 }
+addColumns('exams', [['draft_answers', 'TEXT'], ['draft_idx', 'INTEGER'], ['draft_remaining_sec', 'INTEGER']]);
+addColumns('attempts', [['part_id', 'INTEGER REFERENCES question_parts(id)']]);
+addColumns('questions', [
+  ['original_pdf_page', 'INTEGER'],
+  ['has_images', 'INTEGER NOT NULL DEFAULT 0'],
+  ['calculator_allowed', 'INTEGER NOT NULL DEFAULT 1'],
+]);
 
 const count = db.prepare('SELECT COUNT(*) AS n FROM questions').get().n;
 if (count === 0) {
@@ -92,6 +122,40 @@ if (count === 0) {
     ins.run(s.subject, s.year, s.component, s.number, s.marks, s.topic,
       s.text, s.figure, s.scheme, s.feedback, s.expected);
   }
+}
+
+const findQuestion = db.prepare(
+  'SELECT id FROM questions WHERE subject=? AND year=? AND component=? AND number=?'
+);
+
+// Seed question parts ((a), (b), (c) ...).
+if (db.prepare('SELECT COUNT(*) AS n FROM question_parts').get().n === 0) {
+  const insPart = db.prepare(`
+    INSERT INTO question_parts
+      (question_id, letter, text_latex, marks, expected_mark, mark_scheme, ai_feedback, display_order)
+    VALUES (?,?,?,?,?,?,?,?)
+  `);
+  for (const p of seed.parts) {
+    const q = findQuestion.get(p.subject, p.year, p.component, p.number);
+    if (!q) continue;
+    p.items.forEach((it, i) => {
+      insPart.run(q.id, it.letter, it.text, it.marks, it.expected, it.scheme, it.feedback, i);
+    });
+  }
+}
+
+// Seed figures into the images table and flag their questions.
+if (db.prepare('SELECT COUNT(*) AS n FROM images').get().n === 0) {
+  const insImg = db.prepare(
+    'INSERT INTO images (question_id, svg, caption, original_pdf_page, display_order) VALUES (?,?,?,?,?)'
+  );
+  const flag = db.prepare('UPDATE questions SET has_images=1, original_pdf_page=COALESCE(original_pdf_page, ?) WHERE id=?');
+  seed.images.forEach((im, i) => {
+    const q = findQuestion.get(im.subject, im.year, im.component, im.number);
+    if (!q) return;
+    insImg.run(q.id, im.svg, im.caption || null, im.page || null, i);
+    flag.run(im.page || null, q.id);
+  });
 }
 
 // Seed learning objectives and link each question to every objective covering its

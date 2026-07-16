@@ -10,25 +10,35 @@ function dayString(offsetDays) {
 
 router.get('/stats', requireAuth, (req, res) => {
   const uid = req.session.userId;
+  // One row per answered unit: a part when the question has parts, else the question.
   const attempts = db.prepare(`
-    SELECT a.awarded_mark, a.duration_sec, substr(a.created_at, 1, 10) AS day, q.marks
-    FROM attempts a JOIN questions q ON q.id = a.question_id
+    SELECT a.awarded_mark, a.duration_sec, a.question_id,
+           substr(a.created_at, 1, 10) AS day,
+           COALESCE(p.marks, q.marks) AS marks
+    FROM attempts a
+    JOIN questions q ON q.id = a.question_id
+    LEFT JOIN question_parts p ON p.id = a.part_id
     WHERE a.user_id = ?
   `).all(uid);
 
-  const solved = attempts.length;
   let awarded = 0;
   let possible = 0;
   const byDay = {};
   const today = dayString(0);
   let timeTodaySec = 0;
-  let todayCount = 0;
+  // "Questions solved" counts questions, not the individual parts of one.
+  const solvedIds = new Set();
+  const todayIds = new Set();
   for (const a of attempts) {
     awarded += a.awarded_mark;
     possible += a.marks;
-    byDay[a.day] = (byDay[a.day] || 0) + 1;
-    if (a.day === today) { timeTodaySec += a.duration_sec; todayCount += 1; }
+    // Count questions per day (not parts), matching "questions solved".
+    (byDay[a.day] || (byDay[a.day] = new Set())).add(a.question_id);
+    solvedIds.add(a.question_id);
+    if (a.day === today) { timeTodaySec += a.duration_sec; todayIds.add(a.question_id); }
   }
+  const solved = solvedIds.size;
+  const todayCount = todayIds.size;
   const accuracy = possible ? Math.round((100 * awarded) / possible) : 0;
 
   let streak = 0;
@@ -48,7 +58,7 @@ router.get('/stats', requireAuth, (req, res) => {
   const heatmap = [];
   for (let off = 104; off >= 0; off -= 1) {
     const date = dayString(off);
-    heatmap.push({ date, count: byDay[date] || 0 });
+    heatmap.push({ date, count: byDay[date] ? byDay[date].size : 0 });
   }
 
   const recent = db.prepare(`

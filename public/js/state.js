@@ -108,6 +108,37 @@ function animateCounters(root) {
   });
 }
 
+// Figures now live in an images table (a question may carry several); older
+// single-figure rows still render via figure_svg.
+function figuresHTML(q) {
+  const imgs = q.images || [];
+  if (imgs.length) {
+    return imgs.map((im) => `<figure class="q-fig">${im.svg}
+      ${im.caption ? `<figcaption>${esc(im.caption)}</figcaption>` : ''}</figure>`).join('');
+  }
+  return q.figure_svg || '';
+}
+
+// One answer box per part for questions split into (a)(b)(c); otherwise a single box.
+// `answers` is keyed "p<partId>" for parts and by question id for whole questions.
+function answerBoxesHTML(q, answers) {
+  const parts = q.parts || [];
+  if (!parts.length) {
+    return `<textarea class="answer" id="answer" data-key="${q.id}"
+      placeholder="${t('exam.placeholder')}">${esc(answers[q.id] || '')}</textarea>`;
+  }
+  return parts.map((p) => `
+    <div class="part">
+      <div class="part-head">
+        <span class="part-letter">(${esc(p.letter)})</span>
+        <span class="part-marks">${t('common.marks', { m: p.marks })}</span>
+      </div>
+      <div class="q-text">${p.text_latex}</div>
+      <textarea class="answer" data-key="p${p.id}"
+        placeholder="${t('exam.placeholder')}">${esc(answers['p' + p.id] || '')}</textarea>
+    </div>`).join('');
+}
+
 function ringSVG(value, max, size) {
   const r = (size - 12) / 2;
   const c = 2 * Math.PI * r;

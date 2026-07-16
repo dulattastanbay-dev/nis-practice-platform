@@ -63,12 +63,12 @@ Views.bank = async function (root, params) {
         <button class="star-btn ${isM ? 'on' : ''}" id="p-star">${icon(isM ? 'star' : 'starOutline')} ${isM ? t('bank.saved') : t('bank.save')}</button>
       </div>
       <div class="q-text">${qq.text_latex}</div>
-      ${qq.figure_svg || ''}
+      ${figuresHTML(qq)}
       <div class="toolbar">
         <button data-ins="**">𝐁</button><button data-ins="_">𝘐</button><button data-ins="__">U̲</button>
         <button data-ins="Σ">Σ</button><button data-ins="∞">∞</button><button data-ins="∫">∫</button><button data-ins="√">√</button>
       </div>
-      <textarea class="answer" id="p-answer" placeholder="${t('exam.placeholder')}"></textarea>
+      ${answerBoxesHTML(qq, {})}
       <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
         <button class="btn btn-primary" id="p-submit">${t('bank.submit')}</button>
         <button class="btn btn-outline" id="p-scheme" disabled>${t('bank.scheme')}</button>
@@ -128,9 +128,15 @@ Views.bank = async function (root, params) {
     }
     if (!qq) return;
 
-    const ta = root.querySelector('#p-answer');
+    // Toolbar inserts into whichever answer box was last focused (a question can
+    // have one box per part).
+    const boxes = [...root.querySelectorAll('#q-col textarea.answer')];
+    let activeBox = boxes[0];
+    boxes.forEach((b) => b.addEventListener('focus', () => { activeBox = b; }));
     root.querySelectorAll('.toolbar button').forEach((b) => {
       b.addEventListener('click', () => {
+        const ta = activeBox;
+        if (!ta) return;
         const ins = b.dataset.ins;
         const s = ta.selectionStart || 0;
         ta.value = ta.value.slice(0, s) + ins + ta.value.slice(ta.selectionEnd || s);
@@ -152,17 +158,34 @@ Views.bank = async function (root, params) {
 
     let scheme = null;
     root.querySelector('#p-submit').addEventListener('click', async () => {
-      const r = await api('POST', '/api/attempts', {
+      const hasParts = (qq.parts || []).length > 0;
+      const payload = {
         question_id: qq.id,
-        answer_text: ta.value,
         mode: 'practice',
         duration_sec: Math.round((Date.now() - started) / 1000),
-      });
+      };
+      if (hasParts) {
+        payload.answers = {};
+        qq.parts.forEach((p) => {
+          const box = root.querySelector(`textarea[data-key="p${p.id}"]`);
+          payload.answers[p.id] = box ? box.value : '';
+        });
+      } else {
+        payload.answer_text = activeBox ? activeBox.value : '';
+      }
+      const r = await api('POST', '/api/attempts', payload);
+
       const fbText = root.querySelector('#fb-text');
       fbText.classList.remove('muted');
-      fbText.innerHTML = r.ai_feedback;
+      // With parts, show the feedback for each part rather than one blanket note.
+      fbText.innerHTML = r.parts && r.parts.length
+        ? r.parts.map((p) => `<div class="fb-part"><b>(${esc(p.letter)}) ${p.awarded_mark}/${p.marks}</b>
+            <div>${p.ai_feedback}</div></div>`).join('')
+        : r.ai_feedback;
       root.querySelector('#fb-ring').innerHTML = ringSVG(r.awarded_mark, r.marks, 96);
-      scheme = r.mark_scheme;
+      scheme = r.parts && r.parts.length
+        ? r.parts.map((p) => `<b>(${esc(p.letter)})</b> ${p.mark_scheme}`).join('<br>')
+        : r.mark_scheme;
       root.querySelector('#p-scheme').disabled = false;
       renderMath(root);
     });
