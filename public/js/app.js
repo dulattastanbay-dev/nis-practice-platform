@@ -1,9 +1,3 @@
-const LOGO_SVG = `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-  <path d="M20 37V15" stroke="#3d8b40" stroke-width="3" stroke-linecap="round" fill="none"/>
-  <path d="M20 21 C 19 12, 10 8, 5 10 C 7 19, 14 23, 20 21 Z" fill="#4a9e4e"/>
-  <path d="M20 16 C 21 8, 30 4, 35 6 C 33 16, 26 19, 20 16 Z" fill="#2e6b31"/>
-</svg>`;
-
 const NAV_ICONS = {
   dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
   papers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/></svg>',
@@ -75,6 +69,16 @@ async function setLang(lang) {
   renderRoute();
 }
 
+// The official lockup already contains the "NIS" wordmark and school name, so no
+// separate text is rendered. Both variants ship; CSS shows the right one per theme.
+function logoHTML(extraClass) {
+  const alt = 'NIS — Nazarbayev Intellectual Schools';
+  return `<div class="logo ${extraClass || ''}">
+    <img class="logo-img light-only" src="img/logo-light.jpg" alt="${alt}">
+    <img class="logo-img dark-only" src="img/logo-dark.jpg" alt="${alt}">
+  </div>`;
+}
+
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '?';
@@ -91,10 +95,7 @@ function renderShell(active) {
   el.innerHTML = `
   <div class="app-layout">
     <aside class="sidebar" id="sidebar">
-      <div class="logo">${LOGO_SVG}<div>
-        <div class="logo-name">NIS</div>
-        <div class="logo-sub">${t('app.school')}</div>
-      </div></div>
+      ${logoHTML('logo-side')}
       <div class="side-profile">
         ${avatarHTML(App.user.name)}
         <div style="min-width:0">
@@ -147,13 +148,8 @@ function renderAuth() {
   <div class="auth-wrap">
     <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
     <div class="card auth-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div class="logo">${LOGO_SVG}<div>
-          <div class="logo-name">NIS</div>
-          <div class="logo-sub">${t('app.school')}</div>
-        </div></div>
-        ${themeToggleHTML()}
-      </div>
+      <div style="display:flex;justify-content:flex-end">${themeToggleHTML()}</div>
+      ${logoHTML('logo-auth')}
       ${langSwitchHTML()}
       <h1>${t('auth.welcome')}</h1>
       <p class="page-sub">${t('auth.subtitle')}</p>

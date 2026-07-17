@@ -44,7 +44,7 @@ body {
   text-rendering:optimizeLegibility;
 }
 
-h1,h2,h3,.logo-name,.stat-value,.timer,.score-banner .big,.q-title {
+h1,h2,h3,.stat-value,.timer,.score-banner .big,.q-title {
   font-family:'Sora','Plus Jakarta Sans',sans-serif;
   letter-spacing:-.02em;
 }
@@ -72,10 +72,20 @@ a { color:var(--green-dark); text-decoration:none; }
   border-right:1px solid var(--border);
   backdrop-filter:blur(8px);
 }
-.logo { display:flex; align-items:center; gap:11px; padding:4px 8px 8px; }
-.logo svg { width:40px; height:40px; flex:none; filter:drop-shadow(0 4px 8px rgba(46,107,49,.22)); }
-.logo-name { font-weight:800; font-size:23px; letter-spacing:-.5px; color:var(--green-dark); line-height:1; }
-.logo-sub { font-size:10.5px; color:var(--muted); line-height:1.3; margin-top:3px; font-weight:500; }
+/* Official lockup. The artwork has a baked-in white/black background, so each
+   variant is blended into the surface it sits on (multiply hides white, screen
+   hides black) — no visible box, no image editing needed. */
+.logo { display:flex; align-items:center; justify-content:center; padding:2px 4px 10px; }
+.logo-img { display:block; width:100%; height:auto; }
+.light-only { mix-blend-mode:multiply; }
+.dark-only { display:none; mix-blend-mode:screen; }
+[data-theme="dark"] .light-only { display:none; }
+[data-theme="dark"] .dark-only { display:block; }
+
+.logo-side .logo-img { max-width:172px; }
+.logo-auth { padding-top:0; }
+.logo-auth .logo-img { max-width:210px; }
+.logo-hero .logo-img { max-width:260px; }
 
 /* sidebar profile block */
 .side-profile {
@@ -332,7 +342,6 @@ a.row-item:hover, .row-item.hoverable:hover { background:var(--green-tint); }
 /* ---------- About ---------- */
 .about-hero { text-align:center; padding:38px 22px; background:linear-gradient(180deg,#ffffff, #f6faf6); }
 .about-hero .logo { justify-content:center; }
-.about-hero .logo svg { width:60px; height:60px; }
 .about-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:18px 0; }
 .about-card { text-align:center; padding:26px 16px; }
 .about-ic { width:58px; height:58px; margin:0 auto 12px; border-radius:18px; background:var(--green-tint); display:flex; align-items:center; justify-content:center; font-size:26px; }
@@ -457,7 +466,7 @@ a.row-item:hover .row-main::after { opacity:1; transform:translateX(0); }
 
 /* Nav items: soft nudge; logo waves when hovered */
 .logo { cursor:default; }
-.logo:hover svg { animation:wiggle .6s var(--ease); }
+.logo:hover .logo-img { animation:wiggle .6s var(--ease); }
 .avatar { transition:transform .25s var(--ease); }
 .side-profile:hover .avatar, .user-chip:hover .avatar { transform:scale(1.08) rotate(-4deg); }
 

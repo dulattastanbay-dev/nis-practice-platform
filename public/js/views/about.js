@@ -1,9 +1,7 @@
 Views.about = async function (root) {
   root.innerHTML = `
     <div class="card about-hero">
-      <div class="logo">${LOGO_SVG}</div>
-      <h1 class="page-title" style="margin-top:6px">NIS</h1>
-      <p class="muted">${t('app.school')}</p>
+      ${logoHTML('logo-hero')}
       <p style="margin-top:14px;font-weight:700">${t('about.tagline')}</p>
       <p class="muted" style="max-width:560px;margin:10px auto 0;line-height:1.7">${t('about.blurb')}</p>
     </div>
