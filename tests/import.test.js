@@ -43,6 +43,21 @@ test('validate rejects papers whose part marks do not sum to the question', () =
   assert.deepStrictEqual(importer.validate(paper), []);
 });
 
+test('a question with parts may have an empty stem, but a bare one may not', () => {
+  const { importer } = freshDb();
+  const withParts = JSON.parse(JSON.stringify(paper));
+  withParts.questions[0].text = ''; // starts straight at (a)
+  assert.deepStrictEqual(importer.validate(withParts), [],
+    'empty stem is valid when parts carry the wording');
+
+  const noParts = JSON.parse(JSON.stringify(paper));
+  noParts.questions[0].text = '';
+  noParts.questions[0].parts = [];
+  noParts.questions[0].expected_mark = 4;
+  assert.ok(importer.validate(noParts).some((e) => e.includes('text is required')),
+    'a question with no parts still needs text');
+});
+
 test('validate catches missing fields and impossible expected marks', () => {
   const { importer } = freshDb();
   assert.ok(importer.validate({}).length > 0);

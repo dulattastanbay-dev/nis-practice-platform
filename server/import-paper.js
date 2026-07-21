@@ -81,9 +81,14 @@ function validate(paper) {
   (paper.questions || []).forEach((q, i) => {
     const at = `questions[${i}]`;
     req(Number.isInteger(q.number), `${at}.number must be an integer`);
-    req(typeof q.text === 'string' && q.text.trim(), `${at}.text is required`);
-    req(Number.isInteger(q.marks) && q.marks > 0, `${at}.marks must be > 0`);
     const parts = q.parts || [];
+    // A question that begins straight at (a) has no shared stem; its parts carry
+    // the wording, so an empty text is valid only when parts exist.
+    req(
+      typeof q.text === 'string' && (q.text.trim() || parts.length > 0),
+      `${at}.text is required (or the question must have parts)`
+    );
+    req(Number.isInteger(q.marks) && q.marks > 0, `${at}.marks must be > 0`);
     if (parts.length) {
       const sum = parts.reduce((s, p) => s + (Number(p.marks) || 0), 0);
       req(sum === q.marks, `${at}: part marks (${sum}) must sum to question marks (${q.marks})`);
