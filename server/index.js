@@ -19,6 +19,7 @@ app.use('/api', require('./routes/auth'));
 app.use('/api', require('./routes/content'));
 app.use('/api', require('./routes/exams'));
 app.use('/api', require('./routes/stats'));
+app.use('/api', require('./routes/review'));
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'not_found' }));
 

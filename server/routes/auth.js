@@ -8,7 +8,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LANGS = ['en', 'kk', 'ru'];
 
 function publicUser(id) {
-  return db.prepare('SELECT id, email, name, language FROM users WHERE id=?').get(id);
+  return db.prepare('SELECT id, email, name, language, is_admin FROM users WHERE id=?').get(id);
 }
 
 router.post('/register', (req, res) => {
@@ -21,8 +21,11 @@ router.post('/register', (req, res) => {
     return res.status(409).json({ error: 'email_taken' });
   }
   const hash = bcrypt.hashSync(String(password), 10);
-  const info = db.prepare('INSERT INTO users (email, password_hash, name) VALUES (?,?,?)')
-    .run(norm, hash, String(name).trim());
+  // The very first account owns the instance, so there is always someone who can
+  // review imported content. Every later account is an ordinary student.
+  const isFirst = db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0 ? 1 : 0;
+  const info = db.prepare('INSERT INTO users (email, password_hash, name, is_admin) VALUES (?,?,?,?)')
+    .run(norm, hash, String(name).trim(), isFirst);
   req.session.userId = Number(info.lastInsertRowid);
   res.json({ user: publicUser(req.session.userId) });
 });

@@ -1,4 +1,5 @@
 const NAV_ICONS = {
+  review: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v5h5"/><path d="m9 14 2 2 4-4"/></svg>',
   dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
   papers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4"/></svg>',
   bank: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>',
@@ -19,6 +20,11 @@ const NAV_ITEMS = [
   ['marked', '#/marked', 'nav.marked'],
   ['progress', '#/objectives', 'nav.progress'],
   ['about', '#/about', 'nav.about'],
+];
+
+// Admin-only entries, appended for users who can edit content.
+const ADMIN_NAV_ITEMS = [
+  ['review', '#/review', 'nav.review'],
 ];
 
 function parseHash() {
@@ -103,7 +109,7 @@ function renderShell(active) {
           <div class="sp-mail">${esc(App.user.email)}</div>
         </div>
       </div>
-      ${NAV_ITEMS.map(([key, href, label]) =>
+      ${NAV_ITEMS.concat(App.user.is_admin ? ADMIN_NAV_ITEMS : []).map(([key, href, label]) =>
         `<a class="nav-item ${active === key || (key === 'objectives' && active === 'progress') ? 'active' : ''}" href="${href}">${NAV_ICONS[key]}${t(label)}</a>`
       ).join('')}
       <button class="nav-item logout" id="btn-logout">${NAV_ICONS.logout}${t('nav.logout')}</button>

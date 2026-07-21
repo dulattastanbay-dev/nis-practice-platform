@@ -122,6 +122,11 @@ addColumns('questions', [
 // Figures may be inline SVG (`svg`) or a served image file (`src`), e.g. a
 // scanned past-paper page.
 addColumns('images', [['src', 'TEXT']]);
+// Content editing (the review screen) is restricted to admins.
+addColumns('users', [['is_admin', 'INTEGER NOT NULL DEFAULT 0']]);
+// The first account created owns the instance, so there is always someone who
+// can fix imported content. Later accounts are ordinary students.
+db.exec('UPDATE users SET is_admin=1 WHERE id=(SELECT MIN(id) FROM users)');
 
 const count = db.prepare('SELECT COUNT(*) AS n FROM questions').get().n;
 if (count === 0) {
