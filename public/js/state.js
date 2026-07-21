@@ -16,6 +16,63 @@ function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
 }
 
+// ---- Confirm dialog (replaces window.confirm so it matches the UI) ----
+// Resolves true/false. Esc or the backdrop cancels; Enter confirms.
+function confirmDialog(message, opts) {
+  const o = opts || {};
+  return new Promise((resolve) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'modal-wrap';
+    wrap.innerHTML = `
+      <div class="modal-backdrop"></div>
+      <div class="modal card" role="alertdialog" aria-modal="true" aria-label="${esc(message)}">
+        <p class="modal-msg">${esc(message)}</p>
+        <div class="modal-actions">
+          <button class="btn btn-outline" data-a="cancel">${esc(o.cancelLabel || t('common.cancel'))}</button>
+          <button class="btn ${o.danger ? 'btn-danger' : 'btn-primary'}" data-a="ok">${esc(o.confirmLabel || t('common.confirm'))}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    const prev = document.activeElement;
+    const done = (v) => {
+      document.removeEventListener('keydown', onKey);
+      wrap.remove();
+      if (prev && prev.focus) prev.focus();
+      resolve(v);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); done(false); }
+      if (e.key === 'Enter') { e.preventDefault(); done(true); }
+    };
+    wrap.querySelector('[data-a="cancel"]').addEventListener('click', () => done(false));
+    wrap.querySelector('[data-a="ok"]').addEventListener('click', () => done(true));
+    wrap.querySelector('.modal-backdrop').addEventListener('click', () => done(false));
+    document.addEventListener('keydown', onKey);
+    wrap.querySelector('[data-a="ok"]').focus();
+  });
+}
+
+// ---- Toast (replaces window.alert); auto-dismisses, announced politely ----
+function toast(message, type) {
+  const kind = type || 'info';
+  let host = document.querySelector('.toast-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.className = 'toast-host';
+    host.setAttribute('aria-live', 'polite');
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  el.className = `toast toast-${kind}`;
+  const ic = kind === 'success' ? 'checkCircle' : kind === 'error' ? 'xCircle' : 'sparkles';
+  el.innerHTML = `${icon(ic)}<span>${esc(message)}</span>`;
+  host.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 300);
+  }, 3500);
+}
+
 // ---- Skeleton loading placeholder ----
 function skeletonHTML() {
   return `<div class="skeleton-wrap">
@@ -113,8 +170,15 @@ function animateCounters(root) {
 function figuresHTML(q) {
   const imgs = q.images || [];
   if (imgs.length) {
-    return imgs.map((im) => `<figure class="q-fig">${im.svg}
-      ${im.caption ? `<figcaption>${esc(im.caption)}</figcaption>` : ''}</figure>`).join('');
+    return imgs.map((im) => {
+      // A figure is either inline SVG or a served image file (e.g. a page scan).
+      const body = im.src
+        ? `<img class="q-scan" src="${esc(im.src)}" alt="${esc(im.caption || 'Question figure')}" loading="lazy">`
+        : (im.svg || '');
+      if (!body) return '';
+      return `<figure class="q-fig">${body}
+        ${im.caption ? `<figcaption>${esc(im.caption)}</figcaption>` : ''}</figure>`;
+    }).join('');
   }
   return q.figure_svg || '';
 }

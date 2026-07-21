@@ -117,7 +117,11 @@ addColumns('questions', [
   ['original_pdf_page', 'INTEGER'],
   ['has_images', 'INTEGER NOT NULL DEFAULT 0'],
   ['calculator_allowed', 'INTEGER NOT NULL DEFAULT 1'],
+  ['needs_review', 'INTEGER NOT NULL DEFAULT 0'],
 ]);
+// Figures may be inline SVG (`svg`) or a served image file (`src`), e.g. a
+// scanned past-paper page.
+addColumns('images', [['src', 'TEXT']]);
 
 const count = db.prepare('SELECT COUNT(*) AS n FROM questions').get().n;
 if (count === 0) {

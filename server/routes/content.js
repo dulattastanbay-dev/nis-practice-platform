@@ -5,14 +5,14 @@ const ai = require('../ai');
 
 const router = express.Router();
 const PUB = 'id, subject, year, component, number, marks, topic, text_latex, figure_svg,'
-  + ' original_pdf_page, has_images, calculator_allowed';
+  + ' original_pdf_page, has_images, calculator_allowed, needs_review';
 
 // Parts/images are public; their mark schemes and expected marks never are.
 const partsPublic = db.prepare(
   'SELECT id, letter, text_latex, marks FROM question_parts WHERE question_id=? ORDER BY display_order'
 );
 const imagesPublic = db.prepare(
-  'SELECT id, svg, caption, original_pdf_page FROM images WHERE question_id=? ORDER BY display_order'
+  'SELECT id, svg, src, caption, original_pdf_page FROM images WHERE question_id=? ORDER BY display_order'
 );
 function decorate(q) {
   return { ...q, parts: partsPublic.all(q.id), images: imagesPublic.all(q.id) };
@@ -45,6 +45,16 @@ router.get('/questions/:id', requireAuth, (req, res) => {
   const row = db.prepare(`SELECT ${PUB} FROM questions WHERE id=?`).get(req.params.id);
   if (!row) return res.status(404).json({ error: 'not_found' });
   res.json({ question: decorate(row) });
+});
+
+// Which papers actually exist, so the picker only offers real ones.
+router.get('/papers', requireAuth, (req, res) => {
+  const rows = db.prepare(`
+    SELECT subject, year, component, COUNT(*) AS questions, SUM(marks) AS marks
+    FROM questions GROUP BY subject, year, component
+    ORDER BY subject, year DESC, component
+  `).all();
+  res.json({ papers: rows });
 });
 
 router.get('/topics', requireAuth, (req, res) => {

@@ -5,13 +5,13 @@ const { requireAuth } = require('../auth');
 const router = express.Router();
 const SUBJECTS = ['Chemistry', 'Mathematics', 'Physics', 'Biology'];
 const PUB = 'id, subject, year, component, number, marks, topic, text_latex, figure_svg,'
-  + ' original_pdf_page, has_images, calculator_allowed';
+  + ' original_pdf_page, has_images, calculator_allowed, needs_review';
 
 const partsPublic = db.prepare(
   'SELECT id, letter, text_latex, marks FROM question_parts WHERE question_id=? ORDER BY display_order'
 );
 const imagesPublic = db.prepare(
-  'SELECT id, svg, caption, original_pdf_page FROM images WHERE question_id=? ORDER BY display_order'
+  'SELECT id, svg, src, caption, original_pdf_page FROM images WHERE question_id=? ORDER BY display_order'
 );
 const partsGrading = db.prepare('SELECT * FROM question_parts WHERE question_id=? ORDER BY display_order');
 function decorate(q) {
@@ -88,7 +88,7 @@ router.post('/exams', requireAuth, (req, res) => {
   const y = Number(year);
   const c = Number(component);
   if (!SUBJECTS.includes(subject)) return res.status(400).json({ error: 'bad_subject' });
-  if (!Number.isInteger(y) || y < 2021 || y > 2025) return res.status(400).json({ error: 'bad_year' });
+  if (!Number.isInteger(y) || y < 2015 || y > 2030) return res.status(400).json({ error: 'bad_year' });
   if (![1, 2, 3].includes(c)) return res.status(400).json({ error: 'bad_component' });
 
   let questions = db.prepare(

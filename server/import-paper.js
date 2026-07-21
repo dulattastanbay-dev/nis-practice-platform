@@ -111,8 +111,8 @@ function importPaper(paper) {
   const insQ = db.prepare(`
     INSERT INTO questions
       (subject, year, component, number, marks, topic, text_latex, figure_svg, mark_scheme,
-       ai_feedback, expected_mark, original_pdf_page, has_images, calculator_allowed)
-    VALUES (?,?,?,?,?,?,?,NULL,?,?,?,?,?,?)
+       ai_feedback, expected_mark, original_pdf_page, has_images, calculator_allowed, needs_review)
+    VALUES (?,?,?,?,?,?,?,NULL,?,?,?,?,?,?,?)
   `);
   const insPart = db.prepare(`
     INSERT INTO question_parts
@@ -120,8 +120,19 @@ function importPaper(paper) {
     VALUES (?,?,?,?,?,?,?,?)
   `);
   const insImg = db.prepare(
-    'INSERT INTO images (question_id, svg, caption, original_pdf_page, display_order) VALUES (?,?,?,?,?)'
+    'INSERT INTO images (question_id, svg, src, caption, original_pdf_page, display_order) VALUES (?,?,?,?,?,?)'
   );
+  // Page scans are copied into public/ so they can be served alongside the app.
+  const IMG_DIR = path.join(__dirname, '..', 'public', 'img', 'papers');
+  function storeImage(im) {
+    if (!im.abs || !fs.existsSync(im.abs)) return null;
+    const slug = `${paper.subject}_${paper.year}_C${paper.component}`.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const dir = path.join(IMG_DIR, slug);
+    fs.mkdirSync(dir, { recursive: true });
+    const name = path.basename(im.abs);
+    fs.copyFileSync(im.abs, path.join(dir, name));
+    return `img/papers/${slug}/${name}`;
+  }
   const findLo = db.prepare('SELECT id FROM learning_objectives WHERE subject=? AND code=?');
   const linkLo = db.prepare('INSERT OR IGNORE INTO question_objectives (question_id, objective_id) VALUES (?,?)');
 
@@ -137,7 +148,8 @@ function importPaper(paper) {
       paper.subject, paper.year, paper.component, q.number, q.marks, q.topic || '',
       q.text, q.mark_scheme || '', q.ai_feedback || '', Number(q.expected_mark) || 0,
       q.original_pdf_page || null, images.length ? 1 : 0,
-      q.calculator_allowed === false ? 0 : 1
+      q.calculator_allowed === false ? 0 : 1,
+      q.needs_review ? 1 : 0
     );
     const qid = Number(info.lastInsertRowid);
     (q.parts || []).forEach((p, i) => {
@@ -145,7 +157,10 @@ function importPaper(paper) {
         p.mark_scheme || '', p.ai_feedback || '', i);
     });
     images.forEach((im, i) => {
-      insImg.run(qid, im.svg, im.caption || null, im.page || q.original_pdf_page || null, i);
+      const src = im.src || storeImage(im);
+      if (!im.svg && !src) return; // nothing renderable
+      insImg.run(qid, im.svg || '', src, im.caption || null,
+        im.page || q.original_pdf_page || null, i);
     });
     for (const code of q.objectives || []) {
       const lo = findLo.get(paper.subject, code);

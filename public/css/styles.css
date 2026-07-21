@@ -275,6 +275,11 @@ textarea.answer { min-height:130px; resize:vertical; display:block; line-height:
 .fb-part { margin-bottom:12px; }
 .fb-part b { color:var(--green-dark); }
 figure.q-fig { margin:12px 0; }
+/* Scanned past-paper page: readable, click-to-zoom via full width */
+.q-scan { display:block; width:100%; max-width:660px; height:auto; border:1px solid var(--border);
+  border-radius:12px; background:#fff; box-shadow:var(--sh-1); }
+[data-theme="dark"] .q-scan { filter:invert(1) hue-rotate(180deg) brightness(.92); border-color:#2b3a2e; }
+.q-text { white-space:pre-wrap; }
 figure.q-fig figcaption { font-size:12px; color:var(--muted); margin-top:4px; font-weight:600; }
 .exam-nav { display:flex; justify-content:space-between; align-items:center; margin-top:16px; gap:10px; }
 
@@ -589,3 +594,6 @@ a.row-item:hover .row-main::after { opacity:1; transform:translateX(0); }
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
 }
+
+/* Paper picker summary */
+.paper-meta { margin-top:14px; text-align:center; color:var(--muted); font-weight:600; font-size:13.5px; }
