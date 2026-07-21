@@ -64,18 +64,38 @@ const NOISE_TOKENS = [
 // The papers print a narrow right-hand margin column headed "Для экзаменатора"
 // (for the examiner). PDF extraction interleaves it into the question text,
 // often hyphenated across lines as "экзамена-" / "тора".
+// NOTE: JavaScript's \b is defined over [A-Za-z0-9_], so it never matches a
+// Cyrillic word boundary — /\bтора\b/ silently fails. Use explicit lookarounds.
+const CYR = 'А-Яа-яЁёA-Za-z';
+const TORA = new RegExp(`(?<![${CYR}])тора(?![${CYR}])`, 'gi');
+const EXAMINER = new RegExp(`(?<![${CYR}])экзаменатора(?![${CYR}])`, 'gi');
+
 function stripExaminerColumn(s) {
   const text = String(s || '');
   // Only touch text that actually shows the column, so the very common word
   // "Для" is never removed from ordinary sentences.
-  if (!/экзамена\s*-|экзаменатора|\bтора\b/i.test(text)) return text;
+  if (!/экзамена\s*-/i.test(text) && !EXAMINER.test(text) && !TORA.test(text)) return text;
+  EXAMINER.lastIndex = 0; TORA.lastIndex = 0; // reset the /g regexes after .test
   return text
     .replace(/экзамена\s*-\s*/gi, ' ')
-    .replace(/\bэкзаменатора\b/gi, ' ')
-    .replace(/^\s*тора\s*$/gim, ' ')
-    .replace(/\bтора\b/gi, ' ')
+    .replace(EXAMINER, ' ')
+    .replace(TORA, ' ')
     // a lone "Для" left dangling at the end of a line is the column header
     .replace(/[ \t]+Для[ \t]*$/gim, '');
+}
+
+/**
+ * In these papers the marks marker "[N]" is printed at the END of a question.
+ * Anything after the last marker therefore belongs to the NEXT question, which
+ * the page-based extractor swept up. Drop it, and drop the markers themselves —
+ * they are metadata, not wording, and the marks are already stored separately.
+ */
+function trimAtMarks(s) {
+  const text = String(s || '');
+  const markers = [...text.matchAll(/\[\d{1,2}\]/g)];
+  if (!markers.length) return text; // marks came from the points field; leave as is
+  const last = markers[markers.length - 1];
+  return text.slice(0, last.index + last[0].length).replace(/\[\d{1,2}\]/g, ' ');
 }
 
 function stripNoise(s) {
@@ -125,7 +145,8 @@ function splitParts(rawText, questionMarks) {
     if (!marksIn.length) return null;
     const marks = Number(marksIn[marksIn.length - 1][1]);
     if (!(marks > 0)) return null;
-    body = cleanText(body.replace(/\[\d{1,2}\]/g, ' '));
+    // Same rule inside a part: cut at its own [N], then drop the marker.
+    body = cleanText(trimAtMarks(body));
     if (!body) return null;
     parts.push({ letter: letters[i], text: body, marks });
   }
@@ -146,7 +167,8 @@ function convertPaper(dir, outDir) {
 
   for (const q of data.questions || []) {
     const { marks, source } = extractMarks(q);
-    const text = cleanText(q.text);
+    // Cut at the last [N] so the next question's text cannot bleed in.
+    const text = cleanText(trimAtMarks(q.text));
     if (!text || marks <= 0) { skipped += 1; continue; }
 
     // Fallback marking: award roughly 70% so progress is meaningful before a
@@ -272,4 +294,7 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { cleanText, extractMarks, componentOf, convertPaper, splitParts, stripNoise };
+module.exports = {
+  cleanText, extractMarks, componentOf, convertPaper, splitParts, stripNoise,
+  stripExaminerColumn, trimAtMarks,
+};

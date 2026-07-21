@@ -50,7 +50,7 @@ const I18N = {
     'exam.navTitle': 'Questions', 'exam.legendAnswered': 'Answered',
     'exam.legendUnanswered': 'Not answered', 'exam.legendSaved': 'Saved',
     'dash.continueExam': 'Continue Exam',
-    'exam.qOf': 'Question {a} of {b}', 'exam.qTitle': 'Question {n} ({m} marks)',
+    'exam.qOf': 'Question {a} of {b}', 'exam.qTitle': 'Question {n} ({m})',
     'exam.save': 'Save Question', 'exam.saved': 'Saved',
     'exam.placeholder': 'Write your answer here...',
     'exam.prev': 'Previous', 'exam.next': 'Next', 'exam.submit': 'Submit Exam', 'exam.end': 'End Exam',
@@ -163,7 +163,7 @@ const I18N = {
     'exam.navTitle': 'Сұрақтар', 'exam.legendAnswered': 'Жауап берілген',
     'exam.legendUnanswered': 'Жауап берілмеген', 'exam.legendSaved': 'Сақталған',
     'dash.continueExam': 'Емтиханды жалғастыру',
-    'exam.qOf': 'Сұрақ {a} / {b}', 'exam.qTitle': '{n}-сұрақ ({m} балл)',
+    'exam.qOf': 'Сұрақ {a} / {b}', 'exam.qTitle': '{n}-сұрақ ({m})',
     'exam.save': 'Сұрақты сақтау', 'exam.saved': 'Сақталды',
     'exam.placeholder': 'Жауабыңызды осында жазыңыз...',
     'exam.prev': 'Алдыңғы', 'exam.next': 'Келесі', 'exam.submit': 'Емтиханды тапсыру', 'exam.end': 'Аяқтау',
@@ -276,7 +276,7 @@ const I18N = {
     'exam.navTitle': 'Вопросы', 'exam.legendAnswered': 'Отвечено',
     'exam.legendUnanswered': 'Не отвечено', 'exam.legendSaved': 'Сохранено',
     'dash.continueExam': 'Продолжить экзамен',
-    'exam.qOf': 'Вопрос {a} из {b}', 'exam.qTitle': 'Вопрос {n} ({m} баллов)',
+    'exam.qOf': 'Вопрос {a} из {b}', 'exam.qTitle': 'Вопрос {n} ({m})',
     'exam.save': 'Сохранить вопрос', 'exam.saved': 'Сохранено',
     'exam.placeholder': 'Напишите ваш ответ здесь...',
     'exam.prev': 'Назад', 'exam.next': 'Далее', 'exam.submit': 'Сдать экзамен', 'exam.end': 'Завершить',
@@ -349,4 +349,19 @@ function t(key, vars) {
     for (const k of Object.keys(vars)) s = s.replaceAll('{' + k + '}', String(vars[k]));
   }
   return s;
+}
+
+// Marks need real plural agreement: English 1 mark/2 marks; Russian
+// 1 балл / 2-4 балла / 5+ баллов; Kazakh does not pluralise after a numeral.
+function marksLabel(n) {
+  const num = Number(n) || 0;
+  if (App.lang === 'ru') {
+    const m10 = num % 10;
+    const m100 = num % 100;
+    if (m10 === 1 && m100 !== 11) return num + ' балл';
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return num + ' балла';
+    return num + ' баллов';
+  }
+  if (App.lang === 'kk') return num + ' балл';
+  return num + (num === 1 ? ' mark' : ' marks');
 }

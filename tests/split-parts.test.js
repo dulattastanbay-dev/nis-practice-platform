@@ -1,6 +1,34 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { splitParts, stripNoise, cleanText } = require('../server/convert-math-dataset');
+const {
+  splitParts, stripNoise, cleanText, stripExaminerColumn, trimAtMarks,
+} = require('../server/convert-math-dataset');
+
+test('examiner column is stripped even mid-line (JS \\b does not work on Cyrillic)', () => {
+  // Regression: /\bтора\b/ never matches, because \b is defined over ASCII only.
+  const bled = 'Найдите уравнение сферы. тора';
+  const out = stripExaminerColumn(bled);
+  assert.ok(!/тора/.test(out), 'the stray "тора" fragment must go');
+  assert.ok(out.includes('Найдите уравнение сферы.'));
+
+  // ...but a real word merely containing those letters must survive.
+  const real = 'Свойства ректора и аудитора важны.';
+  assert.strictEqual(stripExaminerColumn(real), real);
+});
+
+test('question text is cut at its last [N] so the next question cannot bleed in', () => {
+  // Real shape of the bug: Q3 ended with its [1] and then Q4's fragment followed.
+  const bled = 'Точки P и Q имеют координаты. Найдите уравнение сферы.\n[1]\n3x 2 − x − 10';
+  const out = cleanText(trimAtMarks(bled));
+  assert.ok(out.includes('Найдите уравнение сферы.'));
+  assert.ok(!out.includes('3x 2'), 'next question fragment removed');
+  assert.ok(!out.includes('[1]'), 'marks marker removed');
+});
+
+test('text with no [N] marker is left intact', () => {
+  const plain = 'Найдите значение p.';
+  assert.strictEqual(trimAtMarks(plain), plain);
+});
 
 test('splits (a)(b)(c) with per-part marks that sum to the question total', () => {
   const text = [

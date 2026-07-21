@@ -13,7 +13,7 @@ Views.results = async function (root, params) {
     return `<table class="results">
       <tr><th>${t('results.q')}</th><th>${t('results.yourAnswer')}</th><th>${t('results.expected')}</th><th>${t('results.status')}</th></tr>
       ${results.map((r) => `<tr>
-        <td><b>${r.number}</b> <span class="muted">(${t('common.marks', { m: r.marks })})</span></td>
+        <td><b>${r.number}</b> <span class="muted">(${marksLabel(r.marks)})</span></td>
         <td>${r.answer_text.trim()
           ? esc(r.answer_text.slice(0, 40)) + (r.answer_text.length > 40 ? '…' : '')
           : `<span class="muted">${t('results.noAnswer')}</span>`}</td>
@@ -28,7 +28,7 @@ Views.results = async function (root, params) {
     return results.map((r) => `
       <div class="row-item" style="display:block">
         <div class="q-header">
-          <div class="q-title">${t('exam.qTitle', { n: r.number, m: r.marks })}</div>
+          <div class="q-title">${t('exam.qTitle', { n: r.number, m: marksLabel(r.marks) })}</div>
           <b>${r.awarded_mark} / ${r.marks}</b>
         </div>
         <div class="q-text">${r.text_latex}</div>

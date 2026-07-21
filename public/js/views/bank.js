@@ -59,7 +59,7 @@ Views.bank = async function (root, params) {
     const isM = marked.has(qq.id);
     return `<div class="card">
       <div class="q-header">
-        <div class="q-title">${t('exam.qTitle', { n: qq.number, m: qq.marks })}</div>
+        <div class="q-title">${t('exam.qTitle', { n: qq.number, m: marksLabel(qq.marks) })}</div>
         <button class="star-btn ${isM ? 'on' : ''}" id="p-star">${icon(isM ? 'star' : 'starOutline')} ${isM ? t('bank.saved') : t('bank.save')}</button>
       </div>
       <div class="q-text">${qq.text_latex}</div>

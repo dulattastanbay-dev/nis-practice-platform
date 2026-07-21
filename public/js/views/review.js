@@ -69,7 +69,7 @@ Views.review = async function (root, params) {
           ${(q.parts || []).map((p) => `
             <div class="part rv-part" data-part="${p.id}">
               <div class="part-head"><span class="part-letter">(${esc(p.letter)})</span>
-                <span class="part-marks">${t('common.marks', { m: p.marks })}</span></div>
+                <span class="part-marks">${marksLabel(p.marks)}</span></div>
               <textarea class="answer rv-text" data-f="text">${esc(p.text_latex || '')}</textarea>
               <div class="rv-row">
                 <div class="fld"><label>${t('review.marks')}</label>

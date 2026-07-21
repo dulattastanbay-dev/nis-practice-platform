@@ -12,7 +12,7 @@ Views.marked = async function (root) {
           <span class="row-ic gold">${icon('star')}</span>
           <div class="row-main">
             <div class="row-title">${t('q.number', { n: m.number })}</div>
-            <div class="row-sub">${t('subj.' + m.subject)} · ${m.year} · ${t('papers.component', { n: m.component })} · ${t('common.marks', { m: m.marks })}</div>
+            <div class="row-sub">${t('subj.' + m.subject)} · ${m.year} · ${t('papers.component', { n: m.component })} · ${marksLabel(m.marks)}</div>
           </div>
           <a class="btn btn-outline btn-sm" href="#/bank?qid=${m.question_id}">${t('marked.open')}</a>
           <button class="btn btn-outline btn-sm" data-rm="${m.question_id}">${t('marked.remove')}</button>

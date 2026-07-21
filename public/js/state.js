@@ -195,7 +195,7 @@ function answerBoxesHTML(q, answers) {
     <div class="part">
       <div class="part-head">
         <span class="part-letter">(${esc(p.letter)})</span>
-        <span class="part-marks">${t('common.marks', { m: p.marks })}</span>
+        <span class="part-marks">${marksLabel(p.marks)}</span>
       </div>
       <div class="q-text">${p.text_latex}</div>
       <textarea class="answer" data-key="p${p.id}"
