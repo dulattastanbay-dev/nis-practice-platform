@@ -167,20 +167,37 @@ function animateCounters(root) {
 
 // Figures now live in an images table (a question may carry several); older
 // single-figure rows still render via figure_svg.
+// Whether page scans start expanded. Remembered so a student who prefers the
+// scan always open does not have to re-open it on every question.
+function scansOpen() {
+  return localStorage.getItem('nis_show_scan') === '1';
+}
+
 function figuresHTML(q) {
   const imgs = q.images || [];
-  if (imgs.length) {
-    return imgs.map((im) => {
-      // A figure is either inline SVG or a served image file (e.g. a page scan).
-      const body = im.src
-        ? `<img class="q-scan" src="${esc(im.src)}" alt="${esc(im.caption || 'Question figure')}" loading="lazy">`
-        : (im.svg || '');
-      if (!body) return '';
-      return `<figure class="q-fig">${body}
-        ${im.caption ? `<figcaption>${esc(im.caption)}</figcaption>` : ''}</figure>`;
-    }).join('');
+  if (!imgs.length) return q.figure_svg || '';
+
+  // An inline SVG IS the question's diagram, so it is always shown. A scan is a
+  // photo of the whole exam page — useful for checking a garbled formula, but it
+  // also reveals neighbouring questions, so it is collapsed behind a toggle.
+  const inline = imgs.filter((im) => !im.src && im.svg);
+  const scans = imgs.filter((im) => im.src);
+
+  let out = inline.map((im) => `<figure class="q-fig">${im.svg}
+    ${im.caption ? `<figcaption>${esc(im.caption)}</figcaption>` : ''}</figure>`).join('');
+
+  if (scans.length) {
+    const page = scans[0].original_pdf_page;
+    out += `<details class="scan-details"${scansOpen() ? ' open' : ''}>
+      <summary>${icon('fileText')}<span>${t('q.originalPage')}${page ? ` · ${t('review.page', { n: page })}` : ''}</span>
+        <span class="scan-chev">${icon('chevron')}</span></summary>
+      <p class="scan-hint">${t('q.scanHint')}</p>
+      ${scans.map((im) => `<figure class="q-fig">
+        <img class="q-scan" src="${esc(im.src)}" alt="${esc(im.caption || '')}" loading="lazy">
+      </figure>`).join('')}
+    </details>`;
   }
-  return q.figure_svg || '';
+  return out;
 }
 
 // One answer box per part for questions split into (a)(b)(c); otherwise a single box.

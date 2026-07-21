@@ -612,3 +612,19 @@ a.row-item:hover .row-main::after { opacity:1; transform:translateX(0); }
 [data-theme="dark"] .rv-part { background:#16241a; }
 .rv-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
 .badge:not(.red) { background:var(--green-tint); color:var(--green-dark); }
+
+/* ---------- Collapsible original page scan ---------- */
+.scan-details { margin:14px 0; border:1px solid var(--border); border-radius:14px; background:var(--surface); overflow:hidden; }
+.scan-details > summary {
+  display:flex; align-items:center; gap:9px; padding:11px 14px; cursor:pointer;
+  font-weight:700; font-size:13.5px; color:var(--muted); list-style:none;
+  transition:background .18s var(--ease), color .18s var(--ease);
+}
+.scan-details > summary::-webkit-details-marker { display:none; }
+.scan-details > summary:hover { background:var(--green-tint); color:var(--green-dark); }
+.scan-details > summary svg.ic { width:16px; height:16px; flex:none; }
+.scan-chev { margin-left:auto; display:inline-flex; transition:transform .25s var(--ease); }
+.scan-details[open] > summary .scan-chev { transform:rotate(180deg); }
+.scan-details[open] > summary { border-bottom:1px solid var(--border-soft); color:var(--green-dark); }
+.scan-hint { font-size:12px; color:var(--muted); padding:10px 14px 0; font-weight:500; }
+.scan-details .q-fig { margin:10px 14px 14px; }

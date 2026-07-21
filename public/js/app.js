@@ -243,8 +243,22 @@ async function renderRoute() {
   }
 }
 
+// Remember whether the page-scan panel is expanded. `toggle` does not bubble,
+// so listen for the click on the summary and read the state afterwards.
+function bindScanMemory() {
+  document.addEventListener('click', (e) => {
+    const summary = e.target.closest && e.target.closest('.scan-details > summary');
+    if (!summary) return;
+    const details = summary.parentElement;
+    setTimeout(() => {
+      localStorage.setItem('nis_show_scan', details.open ? '1' : '0');
+    }, 0);
+  });
+}
+
 async function boot() {
   applyTheme(App.theme);
+  bindScanMemory();
   try {
     const r = await api('GET', '/api/me');
     App.user = r.user;
