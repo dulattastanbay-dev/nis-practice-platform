@@ -84,6 +84,24 @@ router.patch('/review/:id', (req, res) => {
     if (sum !== marks) return res.status(400).json({ error: 'part_marks_mismatch' });
   }
 
+  // Figure crops: fractions of the page height marking the task's own slice.
+  const images = Array.isArray(body.images) ? body.images : null;
+  const existingImages = imagesOf.all(q.id);
+  if (images) {
+    for (const im of images) {
+      if (!existingImages.some((e) => e.id === Number(im.id))) {
+        return res.status(400).json({ error: 'unknown_image' });
+      }
+      const top = Number(im.crop_top);
+      const bottom = Number(im.crop_bottom);
+      const bothNull = im.crop_top === null && im.crop_bottom === null;
+      if (bothNull) continue; // clearing the crop shows the whole page again
+      if (!isFinite(top) || !isFinite(bottom) || top < 0 || bottom > 1 || bottom - top < 0.02) {
+        return res.status(400).json({ error: 'bad_crop' });
+      }
+    }
+  }
+
   const update = db.prepare(`UPDATE questions
     SET text_latex=?, mark_scheme=?, marks=?, expected_mark=?, needs_review=? WHERE id=?`);
   const updPart = db.prepare(`UPDATE question_parts
@@ -100,6 +118,18 @@ router.patch('/review/:id', (req, res) => {
         p.expected_mark === undefined ? known.expected_mark : Number(p.expected_mark),
         p.mark_scheme === undefined ? known.mark_scheme : String(p.mark_scheme),
         known.id, q.id
+      );
+    }
+  }
+
+  if (images) {
+    const updImg = db.prepare('UPDATE images SET crop_top=?, crop_bottom=? WHERE id=? AND question_id=?');
+    for (const im of images) {
+      const clear = im.crop_top === null && im.crop_bottom === null;
+      updImg.run(
+        clear ? null : Number(im.crop_top),
+        clear ? null : Number(im.crop_bottom),
+        Number(im.id), q.id
       );
     }
   }

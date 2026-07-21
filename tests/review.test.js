@@ -91,6 +91,54 @@ test('edits cannot break the marks invariants', async () => {
   } finally { server.close(); }
 });
 
+test('figure crops can be saved, cleared and are validated', async () => {
+  const { server, api } = await startServer();
+  try {
+    await admin(api);
+    // the seeded Maths Q6 carries an inline figure; give it a crop to edit
+    const all = (await api('GET', '/api/review/queue?all=1')).data.questions;
+    let target = null;
+    for (const row of all) {
+      const q = (await api('GET', `/api/review/${row.id}`)).data.question;
+      if (q.images.length) { target = q; break; }
+    }
+    if (!target) return; // no figures in this dataset
+
+    const imgId = target.images[0].id;
+    const ok = await api('PATCH', `/api/review/${target.id}`, {
+      images: [{ id: imgId, crop_top: 0.1, crop_bottom: 0.6 }],
+    });
+    assert.strictEqual(ok.status, 200);
+    assert.strictEqual(ok.data.question.images[0].crop_top, 0.1);
+    assert.strictEqual(ok.data.question.images[0].crop_bottom, 0.6);
+
+    // clearing both restores the whole page
+    const cleared = await api('PATCH', `/api/review/${target.id}`, {
+      images: [{ id: imgId, crop_top: null, crop_bottom: null }],
+    });
+    assert.strictEqual(cleared.data.question.images[0].crop_top, null);
+
+    // a window that is inverted, too small, or out of range is refused
+    for (const bad of [
+      { crop_top: 0.8, crop_bottom: 0.2 },
+      { crop_top: 0.5, crop_bottom: 0.505 },
+      { crop_top: -0.2, crop_bottom: 0.9 },
+      { crop_top: 0.1, crop_bottom: 1.4 },
+    ]) {
+      const r = await api('PATCH', `/api/review/${target.id}`, { images: [{ id: imgId, ...bad }] });
+      assert.strictEqual(r.status, 400, `should reject ${JSON.stringify(bad)}`);
+      assert.strictEqual(r.data.error, 'bad_crop');
+    }
+
+    // a figure belonging to another question is refused
+    const foreign = await api('PATCH', `/api/review/${target.id}`, {
+      images: [{ id: 999999, crop_top: 0.1, crop_bottom: 0.5 }],
+    });
+    assert.strictEqual(foreign.status, 400);
+    assert.strictEqual(foreign.data.error, 'unknown_image');
+  } finally { server.close(); }
+});
+
 test('part text can be corrected while marks stay balanced', async () => {
   const { server, api } = await startServer();
   try {

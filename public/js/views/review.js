@@ -29,9 +29,25 @@ Views.review = async function (root, params) {
     idx = Math.max(0, Math.min(idx, queue.length - 1));
     const { question: q } = await api('GET', `/api/review/${queue[idx].id}`);
 
-    const scan = (q.images || []).map((im) => im.src
-      ? `<img class="rv-scan" src="${esc(im.src)}" alt="${esc(im.caption || '')}">`
-      : (im.svg || '')).join('') || `<div class="empty">${t('review.noScan')}</div>`;
+    // The scan is shown whole, with the current crop drawn over it: everything
+    // outside the two handles is dimmed, so it is obvious what students will see.
+    const scan = (q.images || []).map((im) => {
+      if (!im.src) return im.svg || '';
+      const top = im.crop_top == null ? 0 : im.crop_top;
+      const bottom = im.crop_bottom == null ? 1 : im.crop_bottom;
+      return `<div class="rv-cropper" data-image="${im.id}">
+          <img class="rv-scan" src="${esc(im.src)}" alt="${esc(im.caption || '')}">
+          <div class="rv-shade rv-shade-top" style="height:${(top * 100).toFixed(2)}%"></div>
+          <div class="rv-shade rv-shade-bottom" style="height:${((1 - bottom) * 100).toFixed(2)}%"></div>
+        </div>
+        <div class="rv-cropctl" data-for="${im.id}">
+          <label>${t('review.cropTop')} <output class="rv-out" data-o="top">${(top * 100).toFixed(1)}%</output></label>
+          <input type="range" min="0" max="100" step="0.5" data-c="top" value="${(top * 100).toFixed(1)}">
+          <label>${t('review.cropBottom')} <output class="rv-out" data-o="bottom">${(bottom * 100).toFixed(1)}%</output></label>
+          <input type="range" min="0" max="100" step="0.5" data-c="bottom" value="${(bottom * 100).toFixed(1)}">
+          <button class="btn btn-outline btn-sm" data-c="reset">${t('review.cropReset')}</button>
+        </div>`;
+    }).join('') || `<div class="empty">${t('review.noScan')}</div>`;
 
     root.innerHTML = `
       <h1 class="page-title">${t('review.title')}</h1>
@@ -92,10 +108,60 @@ Views.review = async function (root, params) {
       </div>`;
 
     bindToggle();
+    bindCropControls();
     root.querySelector('#rv-prev').addEventListener('click', () => { idx -= 1; refresh(); });
     root.querySelector('#rv-next').addEventListener('click', () => { idx += 1; refresh(); });
     root.querySelector('#rv-save').addEventListener('click', () => save(q, false));
     root.querySelector('#rv-savekeep').addEventListener('click', () => save(q, true));
+  }
+
+  // Live crop editing: the shaded overlay follows the sliders immediately, so
+  // the crop can be judged against the page before saving.
+  function bindCropControls() {
+    root.querySelectorAll('.rv-cropctl').forEach((ctl) => {
+      const id = ctl.dataset.for;
+      const box = root.querySelector(`.rv-cropper[data-image="${id}"]`);
+      if (!box) return;
+      const topIn = ctl.querySelector('[data-c="top"]');
+      const botIn = ctl.querySelector('[data-c="bottom"]');
+
+      const paint = () => {
+        // Keep the handles from crossing, leaving at least a 2% window.
+        let top = Number(topIn.value);
+        let bottom = Number(botIn.value);
+        if (bottom < top + 2) {
+          if (document.activeElement === topIn) top = bottom - 2;
+          else bottom = top + 2;
+          topIn.value = Math.max(0, top);
+          botIn.value = Math.min(100, bottom);
+          top = Number(topIn.value); bottom = Number(botIn.value);
+        }
+        box.querySelector('.rv-shade-top').style.height = `${top}%`;
+        box.querySelector('.rv-shade-bottom').style.height = `${100 - bottom}%`;
+        ctl.querySelector('[data-o="top"]').textContent = `${top.toFixed(1)}%`;
+        ctl.querySelector('[data-o="bottom"]').textContent = `${bottom.toFixed(1)}%`;
+      };
+
+      topIn.addEventListener('input', paint);
+      botIn.addEventListener('input', paint);
+      ctl.querySelector('[data-c="reset"]').addEventListener('click', () => {
+        topIn.value = 0; botIn.value = 100; paint();
+      });
+    });
+  }
+
+  // Crop payload for the save call; a full-page window means "no crop".
+  function cropPayload() {
+    return [...root.querySelectorAll('.rv-cropctl')].map((ctl) => {
+      const top = Number(ctl.querySelector('[data-c="top"]').value) / 100;
+      const bottom = Number(ctl.querySelector('[data-c="bottom"]').value) / 100;
+      const whole = top <= 0.001 && bottom >= 0.999;
+      return {
+        id: Number(ctl.dataset.for),
+        crop_top: whole ? null : Number(top.toFixed(4)),
+        crop_bottom: whole ? null : Number(bottom.toFixed(4)),
+      };
+    });
   }
 
   function toggleHTML() {
@@ -115,6 +181,8 @@ Views.review = async function (root, params) {
       expected_mark: Number(root.querySelector('#rv-expected').value),
       needs_review: keepFlag,
     };
+    const crops = cropPayload();
+    if (crops.length) payload.images = crops;
     const partEls = [...root.querySelectorAll('.rv-part')];
     if (partEls.length) {
       payload.parts = partEls.map((el) => ({
