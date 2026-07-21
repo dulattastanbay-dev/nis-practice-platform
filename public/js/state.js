@@ -139,6 +139,31 @@ function relDay(iso) {
   return t('time.daysAgo', { n: diff });
 }
 
+// A cropped figure shows only its slice of the page. The window's height is a
+// fraction of the image's RENDERED height, so it has to be set once the image
+// has laid out (and again if the column resizes).
+function sizeCropWindows(root) {
+  root.querySelectorAll('.q-crop').forEach((fig) => {
+    const win = fig.querySelector('.q-crop-window');
+    const img = fig.querySelector('img');
+    if (!win || !img) return;
+    const frac = parseFloat(fig.style.getPropertyValue('--crop-h')) / 100;
+    if (!isFinite(frac) || frac <= 0) return;
+    const apply = () => {
+      if (!img.clientHeight) return;
+      // Replace the A4 estimate with the real ratio once the image has laid out.
+      win.style.aspectRatio = 'auto';
+      win.style.height = `${Math.round(frac * img.clientHeight)}px`;
+    };
+    if (img.complete && img.naturalWidth) apply();
+    else img.addEventListener('load', apply, { once: true });
+    if (window.ResizeObserver && !fig._ro) {
+      fig._ro = new ResizeObserver(apply);
+      fig._ro.observe(img);
+    }
+  });
+}
+
 // Count-up animation for elements carrying data-count (and optional data-suffix).
 // Respects prefers-reduced-motion. Called by the router after each view renders.
 function animateCounters(root) {
@@ -186,17 +211,28 @@ function figuresHTML(q) {
   let out = inline.map((im) => `<figure class="q-fig">${im.svg}
     ${im.caption ? `<figcaption>${esc(im.caption)}</figcaption>` : ''}</figure>`).join('');
 
-  if (scans.length) {
-    const page = scans[0].original_pdf_page;
-    out += `<details class="scan-details"${scansOpen() ? ' open' : ''}>
-      <summary>${icon('fileText')}<span>${t('q.originalPage')}${page ? ` · ${t('review.page', { n: page })}` : ''}</span>
-        <span class="scan-chev">${icon('chevron')}</span></summary>
-      <p class="scan-hint">${t('q.scanHint')}</p>
-      ${scans.map((im) => `<figure class="q-fig">
-        <img class="q-scan" src="${esc(im.src)}" alt="${esc(im.caption || '')}" loading="lazy">
-      </figure>`).join('')}
-    </details>`;
-  }
+  // A figure needed by the task is shown with the question. It is cropped to the
+  // task's slice of the page (crop_top/crop_bottom are fractions of the page
+  // height) using CSS, so the original file is never re-encoded.
+  out += scans.map((im) => {
+    const top = Number(im.crop_top);
+    const bottom = Number(im.crop_bottom);
+    const cropped = isFinite(top) && isFinite(bottom) && bottom > top && (bottom - top) < 0.995;
+    const img = `<img class="q-scan" src="${esc(im.src)}" alt="${esc(im.caption || 'Figure')}" loading="lazy">`;
+    if (!cropped) return `<figure class="q-fig">${img}</figure>`;
+    const h = bottom - top;
+    // The window reveals `h` of the image, shifted up by `top`.
+    // It must have a height BEFORE the image loads, otherwise a zero-height
+    // window makes the browser treat the image as off-screen and it never
+    // loads. These scans are A4 pages (height ≈ 1.414 × width), which gives a
+    // good initial box; sizeCropWindows() corrects it from the real dimensions.
+    const ar = (1.414 * h).toFixed(4);
+    return `<figure class="q-fig q-crop" style="--crop-h:${(h * 100).toFixed(3)}%">
+      <div class="q-crop-window" style="aspect-ratio:1 / ${ar}"><img class="q-scan" src="${esc(im.src)}"
+        alt="${esc(im.caption || 'Figure')}"
+        style="transform:translateY(-${(top * 100).toFixed(3)}%)"></div>
+    </figure>`;
+  }).join('');
   return out;
 }
 

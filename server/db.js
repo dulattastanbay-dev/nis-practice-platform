@@ -121,7 +121,13 @@ addColumns('questions', [
 ]);
 // Figures may be inline SVG (`svg`) or a served image file (`src`), e.g. a
 // scanned past-paper page.
-addColumns('images', [['src', 'TEXT']]);
+addColumns('images', [
+  ['src', 'TEXT'],
+  // Fractions of the page height: which slice actually contains this task, so
+  // the site embeds the task rather than the whole exam page.
+  ['crop_top', 'REAL'],
+  ['crop_bottom', 'REAL'],
+]);
 // Content editing (the review screen) is restricted to admins.
 addColumns('users', [['is_admin', 'INTEGER NOT NULL DEFAULT 0']]);
 // The first account created owns the instance, so there is always someone who

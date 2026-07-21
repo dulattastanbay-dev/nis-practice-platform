@@ -12,7 +12,7 @@ const partsOf = db.prepare(
   'SELECT id, letter, text_latex, marks, expected_mark, mark_scheme FROM question_parts WHERE question_id=? ORDER BY display_order'
 );
 const imagesOf = db.prepare(
-  'SELECT id, svg, src, caption, original_pdf_page FROM images WHERE question_id=? ORDER BY display_order'
+  'SELECT id, svg, src, caption, original_pdf_page, crop_top, crop_bottom FROM images WHERE question_id=? ORDER BY display_order'
 );
 
 // The queue of questions still awaiting a human check.

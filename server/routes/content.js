@@ -12,7 +12,7 @@ const partsPublic = db.prepare(
   'SELECT id, letter, text_latex, marks FROM question_parts WHERE question_id=? ORDER BY display_order'
 );
 const imagesPublic = db.prepare(
-  'SELECT id, svg, src, caption, original_pdf_page FROM images WHERE question_id=? ORDER BY display_order'
+  'SELECT id, svg, src, caption, original_pdf_page, crop_top, crop_bottom FROM images WHERE question_id=? ORDER BY display_order'
 );
 function decorate(q) {
   return { ...q, parts: partsPublic.all(q.id), images: imagesPublic.all(q.id) };

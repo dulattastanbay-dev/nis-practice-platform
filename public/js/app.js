@@ -236,6 +236,7 @@ async function renderRoute() {
     await view(target, q);
     renderMath(target);
     animateCounters(target);
+    sizeCropWindows(target);
   } catch (err) {
     console.error(err);
     if (!App.user) { renderAuth(); return; }
